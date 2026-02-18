@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { broadcastWebhook } from "./sse-broadcast.js";
 
 interface Webhook {
     id: string;
@@ -38,6 +39,8 @@ export function webhookReceiveHandler(req: Request, res: Response) {
     if (webhookStore[hookId].length > MAX_WEBHOOKS) {
         webhookStore[hookId] = webhookStore[hookId].slice(0, MAX_WEBHOOKS);
     }
+
+    broadcastWebhook(hookId, webhook);
 
     res.status(200).json({ status: "received", id: hookId });
 }

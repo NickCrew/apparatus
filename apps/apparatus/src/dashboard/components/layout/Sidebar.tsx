@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { path: '/mtd', label: 'MTD', icon: Key },
   { path: '/testing', label: 'Testing Lab', icon: FlaskConical },
   { path: '/network', label: 'Network', icon: Network },
+  { path: '/scenarios', label: 'Scenarios', icon: Zap },
   { path: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 

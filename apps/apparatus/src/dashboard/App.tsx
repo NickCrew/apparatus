@@ -9,20 +9,13 @@ import { ChaosConsole } from './components/dashboard/ChaosConsole';
 import { DefenseConsole } from './components/dashboard/DefenseConsole';
 import { DeceptionConsole } from './components/dashboard/DeceptionConsole';
 import { ClusterConsole } from './components/dashboard/ClusterConsole';
-
-// Placeholder Components with basic styling
-const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex items-center justify-center h-full text-neutral-500 font-mono text-sm border-2 border-dashed border-neutral-800 rounded-lg bg-neutral-900/20">
-    [{title.toUpperCase()}_MODULE_NOT_LOADED]
-  </div>
-);
-
-const Traffic = () => <Placeholder title="Traffic" />;
-const Webhooks = () => <Placeholder title="Webhooks" />;
-const MTD = () => <Placeholder title="MTD" />;
-const Testing = () => <Placeholder title="Testing" />;
-const Network = () => <Placeholder title="Network" />;
-const Settings = () => <Placeholder title="Settings" />;
+import { TrafficConsole } from './components/dashboard/TrafficConsole';
+import { WebhooksConsole } from './components/dashboard/WebhooksConsole';
+import { MTDConsole } from './components/dashboard/MTDConsole';
+import { TestingLab } from './components/dashboard/TestingLab';
+import { NetworkConsole } from './components/dashboard/NetworkConsole';
+import { SettingsConsole } from './components/dashboard/SettingsConsole';
+import { ScenarioConsole } from './components/dashboard/ScenarioConsole';
 
 function Layout() {
   return (
@@ -46,16 +39,17 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Overview />} />
-              <Route path="traffic" element={<Traffic />} />
+              <Route path="traffic" element={<TrafficConsole />} />
               <Route path="defense" element={<DefenseConsole />} />
               <Route path="deception" element={<DeceptionConsole />} />
               <Route path="chaos" element={<ChaosConsole />} />
               <Route path="cluster" element={<ClusterConsole />} />
-              <Route path="webhooks" element={<Webhooks />} />
-              <Route path="mtd" element={<MTD />} />
-              <Route path="testing" element={<Testing />} />
-              <Route path="network" element={<Network />} />
-              <Route path="settings" element={<Settings />} />
+              <Route path="webhooks" element={<WebhooksConsole />} />
+              <Route path="mtd" element={<MTDConsole />} />
+              <Route path="testing" element={<TestingLab />} />
+              <Route path="network" element={<NetworkConsole />} />
+              <Route path="scenarios" element={<ScenarioConsole />} />
+              <Route path="settings" element={<SettingsConsole />} />
             </Route>
           </Routes>
         </ApparatusProvider>

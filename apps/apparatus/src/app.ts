@@ -39,6 +39,7 @@ import { victimRouter } from "./victim/index.js";
 import { chat } from "./ai/client.js";
 import { runEscapeScan } from "./escape/index.js";
 import { triggerSupplyChainAttack } from "./simulator/supply-chain.js";
+import { scenarioListHandler, scenarioSaveHandler, scenarioRunHandler } from "./scenarios.js";
 import { request } from "undici";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -163,6 +164,11 @@ export function createApp(): Express {
     app.use("/api/simulator", securityGate);
     app.use("/_sensor", securityGate);
     app.use("/proxy", securityGate);
+    
+    // Scenario Engine
+    app.get("/scenarios", securityGate, scenarioListHandler);
+    app.post("/scenarios", securityGate, scenarioSaveHandler);
+    app.post("/scenarios/:id/run", securityGate, scenarioRunHandler);
 
     // Prometheus Metrics Endpoint
     app.get("/metrics", async (_req, res) => {
