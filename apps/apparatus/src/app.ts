@@ -254,8 +254,8 @@ export function createApp(): Express {
     // Security & Chaos
     app.get("/malicious", eicarHandler);
     app.post("/chaos/crash", crashHandler);
-    app.get("/chaos/cpu", cpuSpikeHandler);
-    app.get("/chaos/memory", memorySpikeHandler);
+    app.all("/chaos/cpu", cpuSpikeHandler); // Allow GET (old) and POST (new)
+    app.all("/chaos/memory", memorySpikeHandler); // Allow GET (old) and POST (new)
 
     // Advanced Logic
     app.all("/kv/:key", kvHandler);

@@ -37,7 +37,9 @@ export function triggerCpuSpike(durationMs: number = 5000) {
 }
 
 export function cpuSpikeHandler(req: Request, res: Response) {
-    const duration = parseInt(req.query.duration as string) || 5000;
+    // Support both query param and JSON body
+    const duration = parseInt(req.body?.duration || req.query.duration as string) || 5000;
+    
     if (triggerCpuSpike(duration)) {
         res.send(`Spiking CPU for ${duration}ms`);
     } else {
@@ -47,8 +49,8 @@ export function cpuSpikeHandler(req: Request, res: Response) {
 
 let memoryHogs: Buffer[] = [];
 export function memorySpikeHandler(req: Request, res: Response) {
-    const action = req.query.action || "allocate";
-    const amountMb = parseInt(req.query.amount as string) || 100;
+    const action = req.body?.action || req.query.action || "allocate";
+    const amountMb = parseInt(req.body?.amount || req.query.amount as string) || 100;
 
     if (action === "clear") {
         memoryHogs = [];
