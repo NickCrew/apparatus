@@ -3,6 +3,7 @@ node_modules/
 
 # build output
 dist/
+apps/apparatus/dist-dashboard
 *.tsbuildinfo
 
 # test / coverage
