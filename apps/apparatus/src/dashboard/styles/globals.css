@@ -4,19 +4,78 @@
 
 @layer base {
   :root {
-    --radius: 0.5rem;
+    --background: 0 0% 2%; /* #050505 */
+    --foreground: 0 0% 100%;
+
+    --card: 220 20% 8%; /* #0F1318 - Elevated from 5% for more depth */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 220 20% 12%; /* #1A1F2B - Elevated from 5% for clarity on modals */
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 184 90% 42%; /* Deeper Teal for better white text contrast */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 10%; /* #131720 */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 218 20% 16%; /* #1F2633 */
+    --muted-foreground: 216 20% 68%; /* #9BA9BF */
+
+    --accent: 218 20% 16%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 340 100% 50%; /* #FF0055 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 218 20% 16%; /* #1F2633 */
+    --input: 218 20% 16%;
+    --ring: 184 100% 50%;
+
+    --radius: 0.125rem; /* 2px */
   }
 
+  .dark {
+    --background: 0 0% 2%;
+    --foreground: 0 0% 100%;
+
+    --card: 220 20% 8%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 220 20% 12%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 184 90% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 10%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 218 20% 16%;
+    --muted-foreground: 216 20% 68%;
+
+    --accent: 218 20% 16%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 340 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 218 20% 16%;
+    --input: 218 20% 16%;
+    --ring: 184 100% 50%;
+  }
+}
+
+@layer base {
   * {
-    @apply border-neutral-800;
+    @apply border-border;
   }
-
   body {
-    @apply bg-neutral-950 text-neutral-100 antialiased;
+    @apply bg-background text-foreground font-sans;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
-  /* CRT Scan-line overlay — barely visible, adds monitor depth */
+  /* CRT Scan-line overlay */
   body::after {
     content: '';
     position: fixed;
@@ -32,7 +91,7 @@
     z-index: 9999;
   }
 
-  /* Noise grain — physical screen texture */
+  /* Noise grain */
   body::before {
     content: '';
     position: fixed;
@@ -50,39 +109,18 @@
     width: 6px;
     height: 6px;
   }
-
   ::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
-
   ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-800 rounded-full;
+    @apply bg-muted rounded-full;
   }
-
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-neutral-700;
-  }
-
-  /* Focus styles */
-  :focus-visible {
-    @apply outline-none ring-1 ring-primary-500/60 ring-offset-1 ring-offset-neutral-950;
-  }
-
-  /* Selection */
-  ::selection {
-    @apply bg-primary-500/20 text-primary-100;
-  }
-}
-
-@layer components {
-  .skip-link {
-    @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4;
-    @apply bg-primary-500 text-white px-4 py-2 rounded-md z-50;
+    @apply bg-muted-foreground;
   }
 }
 
 @layer utilities {
-  /* Stagger delay system for terminal-in animation */
   .stagger-1 { animation-delay: 0ms; }
   .stagger-2 { animation-delay: 60ms; }
   .stagger-3 { animation-delay: 120ms; }
@@ -91,16 +129,4 @@
   .stagger-6 { animation-delay: 300ms; }
   .stagger-7 { animation-delay: 360ms; }
   .stagger-8 { animation-delay: 420ms; }
-
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
 }

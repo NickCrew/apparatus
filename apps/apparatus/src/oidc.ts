@@ -1,34 +1,54 @@
 import { Request, Response } from "express";
 import * as jose from "jose";
 
-// Store keys in memory
-let keyPair: { publicKey: any; privateKey: any };
-let jwks: any;
+interface OidcKeyPair {
+    publicKey: jose.CryptoKey;
+    privateKey: jose.CryptoKey;
+}
 
-async function getKeys() {
-    if (!keyPair) {
-        const { publicKey, privateKey } = await jose.generateKeyPair("RS256");
-        keyPair = { publicKey, privateKey };
-        
-        const jwk = await jose.exportJWK(publicKey);
-        jwk.kid = "simulated-key-id-1";
-        jwk.use = "sig";
-        jwk.alg = "RS256";
-        
-        jwks = {
-            keys: [jwk]
-        };
+interface OidcJwks {
+    keys: jose.JWK[];
+}
+
+async function getKeys(): Promise<{ keyPair: OidcKeyPair; jwks: OidcJwks }> {
+    const { publicKey, privateKey } = await jose.generateKeyPair("RS256");
+    const keyPair: OidcKeyPair = { publicKey, privateKey };
+
+    const jwk = await jose.exportJWK(publicKey);
+    jwk.kid = "simulated-key-id-1";
+    jwk.use = "sig";
+    jwk.alg = "RS256";
+
+    return {
+        keyPair,
+        jwks: { keys: [jwk] },
+    };
+}
+
+let keyMaterialPromise: Promise<{ keyPair: OidcKeyPair; jwks: OidcJwks }> | undefined;
+
+async function getOrCreateKeys(): Promise<{ keyPair: OidcKeyPair; jwks: OidcJwks }> {
+    if (!keyMaterialPromise) {
+        keyMaterialPromise = getKeys().catch((error) => {
+            keyMaterialPromise = undefined;
+            throw error;
+        });
     }
-    return { keyPair, jwks };
+
+    return keyMaterialPromise;
+}
+
+export async function getOidcSigningMaterial(): Promise<{ keyPair: OidcKeyPair; jwks: OidcJwks }> {
+    return getOrCreateKeys();
 }
 
 export async function jwksHandler(req: Request, res: Response) {
-    const { jwks } = await getKeys();
+    const { jwks } = await getOrCreateKeys();
     res.json(jwks);
 }
 
 export async function tokenMintHandler(req: Request, res: Response) {
-    const { keyPair } = await getKeys();
+    const { keyPair } = await getOrCreateKeys();
 
     try {
         // Allow custom claims via body

@@ -192,6 +192,43 @@ export interface JwtDebugResponse {
   error?: string;
 }
 
+export interface JwtForgeRequest {
+  sub?: string;
+  role?: string;
+  expiresIn?: string;
+  claims?: Record<string, unknown>;
+}
+
+export interface JwtForgeResponse {
+  token: string;
+  token_type: string;
+  header: Record<string, unknown>;
+  payload: Record<string, unknown>;
+  hints: {
+    weakKeys: string[];
+    publicKey: string;
+  };
+}
+
+export interface JwtVerifyRequest {
+  token: string;
+  vulnerabilities?: {
+    allowNoneAlg?: boolean;
+    allowWeakKey?: boolean;
+    allowKeyConfusion?: boolean;
+  };
+}
+
+export interface JwtVerifyResponse {
+  valid: boolean;
+  bypassed: boolean;
+  mode: 'secure' | 'none_alg' | 'weak_key' | 'key_confusion' | 'invalid';
+  message: string;
+  header?: Record<string, unknown>;
+  payload?: Record<string, unknown>;
+  matchedKey?: string;
+}
+
 // ============================================================================
 // Security API Types
 // ============================================================================

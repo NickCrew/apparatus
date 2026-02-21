@@ -81,6 +81,10 @@ export type {
   TokenResponse,
   TokenRequest,
   JwtDebugResponse,
+  JwtForgeRequest,
+  JwtForgeResponse,
+  JwtVerifyRequest,
+  JwtVerifyResponse,
 } from './types.js';
 
 // Types - Security

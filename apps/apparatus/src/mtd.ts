@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { MTD_SKIP_ROUTE_PREFIXES } from "./config.js";
 
 let currentPrefix = "";
 
@@ -19,8 +20,8 @@ export function mtdHandler(req: Request, res: Response) {
 export function polymorphicRouteMiddleware(req: Request, res: Response, next: NextFunction) {
     if (!currentPrefix) return next();
 
-    // If prefix is active, req.url MUST start with it (except for /mtd itself to allow discovery)
-    if (req.path.startsWith("/mtd") || req.path.startsWith("/health")) return next();
+    // If prefix is active, req.url MUST start with it (except for system/management routes)
+    if (MTD_SKIP_ROUTE_PREFIXES.some(route => req.path === route || req.path.startsWith(`${route}/`))) return next();
 
     if (req.url.startsWith(`/${currentPrefix}`)) {
         // Rewrite URL to strip prefix so downstream handlers work

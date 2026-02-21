@@ -1,0 +1,74 @@
+version: '3.9'
+
+services:
+  # Apparatus Testing Platform
+  apparatus:
+    build:
+      context: ./apps/apparatus
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+      - "8443:8443"
+      - "50051:50051"
+      - "7946:7946/udp"
+    environment:
+      - DEMO_MODE=true
+      - CLUSTER_SHARED_SECRET=dev-secret
+      - PORT_HTTP1=8090
+      - PORT_HTTP2=8443
+      - ENABLE_COMPRESSION=true
+    networks:
+      - security-lab
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # VulnLab: Vulnerable Web Application
+  vuln-web:
+    build:
+      context: ../VulnLab/apps/vuln-web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - vuln-api
+      - apparatus
+    networks:
+      - security-lab
+    environment:
+      - API_URL=http://vuln-api:5000
+      - APPARATUS_URL=http://apparatus:8090
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # VulnLab: Vulnerable REST API
+  vuln-api:
+    build:
+      context: ../VulnLab/apps/vuln-api
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    networks:
+      - security-lab
+    environment:
+      - PORT=5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  security-lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

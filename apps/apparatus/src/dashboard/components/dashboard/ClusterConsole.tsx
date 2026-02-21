@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState, type FormEvent, useMemo } from 'react';
+import { useState, type FormEvent, useMemo } from 'react';
 import { Globe, Zap, Wifi, Activity } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { useCluster, ClusterNode } from '../../hooks/useCluster';
 import { cn } from '../ui/cn';
+import { ClusterMap } from './ClusterMap';
+import { Slider } from '../ui/slider';
 
 // Simple validator for private IP ranges (RFC 1918) and localhost
 const isPrivateIp = (hostname: string) => {
@@ -124,26 +126,25 @@ export function ClusterConsole() {
                             />
                         </div>
                         <div>
-                            <label htmlFor="attack-rate" className="text-xs font-mono text-neutral-400 uppercase flex justify-between">
+                            <label htmlFor="attack-rate" className="text-xs font-mono text-neutral-400 uppercase flex justify-between mb-2">
                                 <span>Requests Per Node / sec</span>
                                 <span className="text-primary-400">{rate} RPS</span>
                             </label>
-                            <input 
+                            <Slider
                                 id="attack-rate"
-                                type="range" 
-                                min="1" max="100" 
-                                value={rate}
-                                onChange={e => setRate(parseInt(e.target.value, 10))}
-                                className="w-full mt-2 accent-primary-500 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer"
+                                min={1}
+                                max={100}
+                                step={1}
+                                value={[rate]}
+                                onValueChange={(val: number[]) => setRate(val[0])}
                                 aria-label="Requests per node per second"
-                                aria-valuetext={`${rate} requests per second`}
                             />
                         </div>
                         
                         <div className="pt-4">
                             <Button 
                                 type="submit" 
-                                variant={isAttacking ? 'secondary' : 'primary'} 
+                                variant={isAttacking ? 'secondary' : 'default'}
                                 className="w-full h-12 text-sm tracking-widest relative overflow-hidden group"
                                 disabled={isLoading || isAttacking}
                             >
@@ -165,26 +166,48 @@ export function ClusterConsole() {
                 </CardContent>
             </Card>
 
-            <Card variant="panel">
-                <CardHeader>
-                    <CardTitle className="text-xs uppercase tracking-widest text-neutral-500">Node Status</CardTitle>
+            <Card variant="panel" className="flex flex-col min-h-0">
+                <CardHeader className="flex-none pb-2">
+                    <CardTitle className="text-xs uppercase tracking-widest text-neutral-500">Node Cluster Status</CardTitle>
                 </CardHeader>
-                <CardContent className="max-h-48 overflow-y-auto space-y-2 p-0">
-                    {displayNodes.map((node, i) => (
-                        <div key={node.ip + i} className="flex items-center justify-between p-3 border-b border-neutral-800/50 last:border-0 hover:bg-neutral-900/30">
-                            <div className="flex items-center gap-3">
-                                <div className={cn(
-                                    "w-2 h-2 rounded-full",
-                                    node.role === 'self' ? "bg-primary-500 shadow-[0_0_8px_rgba(0,240,255,0.6)]" : "bg-success-500"
-                                )} />
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-mono text-neutral-300">{node.ip}</span>
-                                    <span className="text-[10px] text-neutral-500 uppercase">{node.role}</span>
+                <CardContent className="flex-1 overflow-y-auto p-0 min-h-0">
+                    <div className="divide-y divide-neutral-800/50">
+                        {displayNodes.map((node, i) => {
+                            const isDown = node.status === 'dead';
+                            return (
+                                <div key={node.ip + i} className={cn(
+                                    "flex items-center justify-between p-3 transition-colors",
+                                    isDown ? "bg-danger/5" : "hover:bg-neutral-900/30"
+                                )}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-2 h-2 rounded-full",
+                                            isDown ? "bg-danger shadow-[0_0_8px_rgba(225,29,72,0.6)]" :
+                                            node.role === 'self' ? "bg-primary shadow-[0_0_8px_rgba(0,196,167,0.6)]" : 
+                                            "bg-success shadow-[0_0_8px_rgba(0,255,148,0.4)]"
+                                        )} />
+                                        <div className="flex flex-col">
+                                            <span className={cn(
+                                                "text-xs font-mono",
+                                                isDown ? "text-danger font-bold" : "text-neutral-300"
+                                            )}>{node.ip}</span>
+                                            <span className="text-[10px] text-neutral-500 uppercase">{node.role}</span>
+                                        </div>
+                                    </div>
+                                    {isDown ? (
+                                        <Badge variant="danger" size="sm" dot>DOWN</Badge>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-mono text-neutral-600">
+                                                {Math.floor(Math.random() * 50) + 10}ms
+                                            </span>
+                                            <Wifi className={cn("h-3.5 w-3.5", isAttacking ? "text-primary animate-pulse" : "text-neutral-600")} />
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                            <Wifi className={cn("h-3 w-3", isAttacking ? "text-primary-500 animate-pulse" : "text-neutral-600")} />
-                        </div>
-                    ))}
+                            );
+                        })}
+                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -193,140 +216,4 @@ export function ClusterConsole() {
   );
 }
 
-// Simple Canvas visualization of the cluster
-function ClusterMap({ nodes, isAttacking }: { nodes: ClusterNode[], isAttacking: boolean }) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const nodesRef = useRef(nodes);
-    const isAttackingRef = useRef(isAttacking);
-
-    useEffect(() => {
-        nodesRef.current = nodes;
-    }, [nodes]);
-
-    useEffect(() => {
-        isAttackingRef.current = isAttacking;
-    }, [isAttacking]);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const dpr = window.devicePixelRatio || 1;
-        
-        // Handle Resize
-        const resize = () => {
-            if (canvas.parentElement) {
-                const width = canvas.parentElement.clientWidth;
-                const height = canvas.parentElement.clientHeight;
-                
-                canvas.width = width * dpr;
-                canvas.height = height * dpr;
-                
-                // Reset transform to avoid accumulation
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            }
-        };
-        window.addEventListener('resize', resize);
-        resize();
-
-        let animationFrame: number;
-        let rotation = 0;
-
-        const render = () => {
-            if (document.hidden) {
-                animationFrame = requestAnimationFrame(render);
-                return;
-            }
-
-            if (!canvas.parentElement) return;
-            const width = canvas.parentElement.clientWidth;
-            const height = canvas.parentElement.clientHeight;
-            const centerX = width / 2;
-            const centerY = height / 2;
-
-            const currentNodes = nodesRef.current;
-            const currentAttacking = isAttackingRef.current;
-
-            ctx.clearRect(0, 0, width, height);
-
-            // Draw Connection Lines
-            const radius = Math.min(width, height) / 3;
-            const pulse = currentAttacking ? (Math.sin(Date.now() / 100) * 0.5 + 0.5) : 0;
-            const linkColor = currentAttacking 
-                ? `rgba(0, 240, 255, ${0.2 + pulse * 0.3})` // Blue/Cyan pulse
-                : 'rgba(31, 38, 51, 0.5)';
-
-            // Filter out self for ring positioning
-            const peers = currentNodes.filter(n => n.role !== 'self');
-            
-            peers.forEach((node, i) => {
-                // Avoid division by zero if there's only 1 peer
-                const divisor = peers.length || 1;
-                const angle = (i / divisor) * Math.PI * 2 + rotation;
-                
-                const x = centerX + Math.cos(angle) * radius;
-                const y = centerY + Math.sin(angle) * radius;
-
-                // Line to center
-                ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.lineTo(x, y);
-                ctx.strokeStyle = linkColor;
-                ctx.lineWidth = currentAttacking ? 2 : 1;
-                ctx.stroke();
-
-                // Draw Node
-                ctx.fillStyle = currentAttacking ? '#00A3FF' : '#00B140'; // Active = Info Blue, Idle = Green
-                ctx.shadowColor = ctx.fillStyle;
-                ctx.shadowBlur = currentAttacking ? 15 : 5;
-                ctx.beginPath();
-                ctx.arc(x, y, 6, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-
-                // Label
-                ctx.fillStyle = '#4D5B70';
-                ctx.font = '10px JetBrains Mono';
-                ctx.fillText(node.ip, x + 10, y + 3);
-            });
-
-            // Draw Center Node (Self)
-            ctx.fillStyle = '#FFFFFF';
-            ctx.shadowColor = '#FFFFFF';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            
-            if (currentAttacking) {
-                ctx.strokeStyle = '#00F0FF';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius + 40, 0, Math.PI * 2);
-                ctx.setLineDash([5, 5]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
-
-            rotation += 0.002;
-            animationFrame = requestAnimationFrame(render);
-        };
-
-        render();
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            cancelAnimationFrame(animationFrame);
-        };
-    }, []); // Only run once on mount
-
-    return <canvas 
-        ref={canvasRef} 
-        className="w-full h-full block" 
-        role="img" 
-        aria-label={`Cluster map showing ${nodes.length} nodes. Status: ${isAttacking ? 'ATTACKING' : 'IDLE'}`} 
-    />;
-}
+// End of ClusterConsole component

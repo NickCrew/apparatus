@@ -124,12 +124,28 @@ Complete reference of all Threat Intel Apparatus capabilities, endpoints, and co
 |----------|--------|-------------|
 | `/cluster/members` | GET | List cluster members |
 | `/cluster/attack` | POST | Coordinated attack across cluster |
+| `/cluster/attack/stop` | POST | Stop coordinated cluster attack |
 
-### Ghost Traffic
+### Ghosts (Traffic + API Mocker)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/ghosts` | GET | Ghost traffic generator status/control |
+| `/ghosts` | GET | Ghost state + virtual mocks list (`{ status, ghosts }`) |
+| `/ghosts` | POST | Create a virtual Ghost endpoint |
+| `/ghosts/:id` | DELETE | Remove a virtual Ghost endpoint |
+| `/ghosts/start` | POST | Start synthetic ghost traffic |
+| `/ghosts/stop` | POST | Stop synthetic ghost traffic |
+
+### Local-Only Security Gate
+
+The following mutation endpoints are protected by `securityGate` (localhost-only unless `DEMO_MODE=true`): cluster attack controls, ghost creation/deletion, ghost traffic start/stop, scenarios, drills, simulator, autopilot, and token forge/verify.
+
+### Breaking Behavior Notes
+
+- Default bind host is `127.0.0.1` (not `0.0.0.0`). For Docker/Kubernetes/remote access, set `HOST=0.0.0.0`.
+- `/cluster/attack` and `/cluster/attack/stop` now require localhost access (or `DEMO_MODE=true`).
+- Ghost mutation routes (`/ghosts`, `/ghosts/:id`, `/ghosts/start`, `/ghosts/stop`) require localhost access (or `DEMO_MODE=true`).
+- Legacy `GET /ghosts?action=start|stop` remains for compatibility, but `POST /ghosts/start|stop` is preferred.
 
 ### Labs (Experimental)
 
@@ -297,8 +313,8 @@ Control echo response behavior via headers or query params:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HOST` | `0.0.0.0` | Bind address |
-| `PORT_HTTP1` | `8080` | HTTP/1.1 port |
+| `HOST` | `127.0.0.1` | Bind address |
+| `PORT_HTTP1` | `8090` | HTTP/1.1 port |
 | `PORT_HTTP2` | `8443` | HTTP/2 TLS port |
 | `PORT_TCP` | `9000` | TCP echo port |
 | `PORT_UDP` | `9001` | UDP echo port |
@@ -309,8 +325,13 @@ Control echo response behavior via headers or query params:
 | `CORS` | `true` | Enable CORS headers |
 | `COMPRESSION` | `true` | Enable gzip |
 | `BODY_LIMIT` | `20mb` | Max body size |
+| `CLUSTER_SHARED_SECRET` | unset | Shared secret for signed cluster ATTACK/STOP commands |
+| `CLUSTER_ATTACK_ALLOWLIST` | unset | Comma-separated host allowlist (exact or `.suffix`) for cluster attack targets |
+| `GHOST_ALLOWED_PORTS` | unset | Extra comma-separated loopback ports allowed for ghost traffic targets |
 | `RISK_SERVER_URL` | `http://localhost:4100` | Threat Intel URL |
 | `SENSOR_ID` | Auto-generated | Sensor identifier |
+
+When running in Docker/Kubernetes or from remote hosts, set `HOST=0.0.0.0` explicitly.
 
 ---
 

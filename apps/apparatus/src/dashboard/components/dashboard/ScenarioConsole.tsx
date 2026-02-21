@@ -18,24 +18,37 @@ export function ScenarioConsole() {
   const { scenarios, saveScenario, runScenario, isLoading } = useScenarios();
   const [editorContent, setEditorContent] = useState(JSON.stringify(DEFAULT_SCENARIO, null, 2));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSave = () => {
+      setError(null);
+      setSuccess(null);
       try {
           const json = JSON.parse(editorContent);
           saveScenario(json);
+          setSuccess("Scenario saved successfully.");
       } catch (e) {
-          alert("Invalid JSON");
+          setError("Invalid JSON format.");
       }
   };
 
-  const handleRun = (id: string) => {
-      runScenario(id);
-      alert("Scenario started! Check the logs/traffic.");
+  const handleRun = async (id: string) => {
+      setError(null);
+      setSuccess(null);
+      try {
+          await runScenario(id);
+          setSuccess("Scenario started! Monitor logs for progress.");
+      } catch (e) {
+          setError("Failed to start scenario.");
+      }
   };
 
   const loadScenario = (s: Scenario) => {
       setSelectedId(s.id);
       setEditorContent(JSON.stringify(s, null, 2));
+      setError(null);
+      setSuccess(null);
   };
 
   return (
@@ -43,6 +56,8 @@ export function ScenarioConsole() {
       <div>
         <h1 className="text-2xl font-bold text-neutral-100 font-mono uppercase">Scenario Engine</h1>
         <p className="text-neutral-400 text-sm mt-1">Automated attack sequencing and replay.</p>
+        {error && <div className="mt-2 text-danger-400 text-xs font-mono bg-danger-900/20 p-2 rounded border border-danger-900/50">{error}</div>}
+        {success && <div className="mt-2 text-success-400 text-xs font-mono bg-success-900/20 p-2 rounded border border-success-900/50">{success}</div>}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
@@ -79,7 +94,6 @@ export function ScenarioConsole() {
                 </div>
             </CardContent>
         </Card>
-// ... rest of component
 
         {/* Editor */}
         <Card variant="glass" className="lg:col-span-2 flex flex-col">
@@ -105,6 +119,7 @@ export function ScenarioConsole() {
                     value={editorContent}
                     onChange={e => setEditorContent(e.target.value)}
                     spellCheck={false}
+                    aria-label="Scenario JSON Editor"
                 />
             </CardContent>
         </Card>

@@ -10,6 +10,10 @@ import type {
   TokenResponse,
   TokenRequest,
   JwtDebugResponse,
+  JwtForgeRequest,
+  JwtForgeResponse,
+  JwtVerifyRequest,
+  JwtVerifyResponse,
 } from '../types.js';
 
 export class IdentityApi {
@@ -45,6 +49,22 @@ export class IdentityApi {
    */
   async decodeJwt(token: string): Promise<JwtDebugResponse> {
     return this.http.post<JwtDebugResponse>('/debug/jwt', { token });
+  }
+
+  /**
+   * Forge a fresh JWT with configurable claims
+   * POST /auth/forge
+   */
+  async forgeToken(request?: JwtForgeRequest): Promise<JwtForgeResponse> {
+    return this.http.post<JwtForgeResponse>('/auth/forge', request);
+  }
+
+  /**
+   * Verify a JWT against secure or intentionally vulnerable modes
+   * POST /auth/verify
+   */
+  async verifyToken(request: JwtVerifyRequest): Promise<JwtVerifyResponse> {
+    return this.http.post<JwtVerifyResponse>('/auth/verify', request);
   }
 
   /**

@@ -17,7 +17,7 @@ interface StatCardProps {
 }
 
 const accentColors: Record<AccentColor, string> = {
-  primary: 'bg-primary-500',
+  primary: 'bg-primary',
   success: 'bg-success-500',
   warning: 'bg-warning-500',
   danger: 'bg-danger-500',
@@ -31,7 +31,7 @@ const accentGlows: Record<AccentColor, string> = {
 };
 
 const iconColors: Record<AccentColor, string> = {
-  primary: 'text-primary-500/60',
+  primary: 'text-primary/60',
   success: 'text-success-500/60',
   warning: 'text-warning-500/60',
   danger: 'text-danger-500/60',
@@ -86,7 +86,7 @@ export function StatCard({
           {trend ? (
             <div className={cn(
               "flex items-center gap-1 text-[11px] font-mono",
-              isPositive ? "text-success-500/80" : isNeutral ? "text-neutral-600" : "text-danger-400/80"
+              isPositive ? "text-success-500/80" : isNeutral ? "text-neutral-400" : "text-danger-400/80"
             )}>
               {isPositive ? (
                 <ArrowUpRight size={12} />

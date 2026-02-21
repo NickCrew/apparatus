@@ -124,6 +124,7 @@ export function useSSE(url: string, options: UseSSEOptions = {}): UseSSEReturn {
         eventSourceRef.current = es;
 
         es.onopen = () => {
+            console.log(`[SSE] Connected to ${url}`);
             setStatus('connected');
             setRetryCount(0);
             onOpenRef.current?.();
@@ -135,13 +136,14 @@ export function useSSE(url: string, options: UseSSEOptions = {}): UseSSEReturn {
                         const data = JSON.parse(event.data);
                         set.forEach(cb => cb(data));
                     } catch (e) {
-                        console.error('SSE Parse Error', e);
+                        console.error(`[SSE] Parse Error for ${type}`, e);
                     }
                 });
             });
         };
 
         es.onerror = (event) => {
+            console.error(`[SSE] Connection Error for ${url}`, event);
             setStatus('error');
             onErrorRef.current?.(event);
             es.close();

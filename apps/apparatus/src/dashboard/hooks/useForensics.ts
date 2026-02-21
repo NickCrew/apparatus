@@ -10,7 +10,7 @@ export function useForensics() {
     if (!baseUrl) return;
     setIsCapturing(true);
     // PCAP endpoint streams the file, so we just construct the URL for download
-    const url = `${baseUrl}/capture.pcap?iface=${iface}&duration=${duration}`;
+    const url = `${baseUrl}/capture.pcap?iface=${encodeURIComponent(iface)}&duration=${encodeURIComponent(duration)}`;
     
     // Auto-download trick
     const link = document.createElement('a');

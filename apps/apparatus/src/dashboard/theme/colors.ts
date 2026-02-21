@@ -4,20 +4,20 @@
  */
 
 export const colors = {
-  // Primary: Electric Blue / Cyber Blue
+  // Primary: Professional Teal/Cyan
   primary: {
-    DEFAULT: '#00F0FF',
-    50: '#E0FDFF',
-    100: '#B3FAFF',
-    200: '#80F6FF',
-    300: '#4DF2FF',
-    400: '#26EFFF',
-    500: '#00F0FF', // Main Brand
-    600: '#00C0CC',
-    700: '#009099',
-    800: '#006066',
-    900: '#003033',
-    950: '#00181A',
+    DEFAULT: '#00C4A7',
+    50: '#E0F9F6',
+    100: '#B3EFEC',
+    200: '#80E4DD',
+    300: '#4DD9CE',
+    400: '#26D1C3',
+    500: '#00C4A7', // Main Brand
+    600: '#00A38E',
+    700: '#008375',
+    800: '#00625C',
+    900: '#004242',
+    950: '#002121',
   },
 
   // Semantic Colors
@@ -50,17 +50,18 @@ export const colors = {
   },
 
   danger: {
-    DEFAULT: '#FF0055', // Neon Red/Pink
-    50: '#FFE0EA',
-    100: '#FFB3CB',
-    200: '#FF80AB',
-    300: '#FF4D8B',
-    400: '#FF2672',
-    500: '#FF0055',
-    600: '#CC0044',
-    700: '#990033',
-    800: '#660022',
-    900: '#330011',
+    DEFAULT: '#E11D48', // Crimson/Rose
+    50: '#FDF2F4',
+    100: '#FBE1E6',
+    200: '#F7AFBD',
+    300: '#F27D94',
+    400: '#EE4B6B',
+    500: '#E11D48',
+    600: '#B91C3F',
+    700: '#911636',
+    800: '#69102D',
+    900: '#410A24',
+    950: '#19050E',
   },
 
   info: {

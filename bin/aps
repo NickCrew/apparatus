@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0")")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+DIST="$REPO_DIR/apps/cli/dist/index.js"
+if [[ ! -f "$DIST" ]]; then
+  echo "aps: build not found at apps/cli/dist/index.js" >&2
+  echo "Run: pnpm nx run cli:build" >&2
+  exit 2
+fi
+exec node "$DIST" "$@"
