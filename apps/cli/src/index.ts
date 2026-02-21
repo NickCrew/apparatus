@@ -5,6 +5,7 @@
 
 import { createProgram } from './cli.js';
 import { startRepl } from './repl.js';
+import { registerCompletionsCommand } from './commands/completions.js';
 
 async function main(): Promise<void> {
   const program = createProgram();
@@ -18,6 +19,9 @@ async function main(): Promise<void> {
     .action(async (options) => {
       await startRepl(options);
     });
+
+  // Register completions last so the full command tree is available
+  registerCompletionsCommand(program);
 
   // If no arguments, show help
   if (process.argv.length <= 2) {

@@ -40,3 +40,5 @@ pino-*.log
 
 .agents/reviews
 **/reviews
+.gemini-design/
+backlog/

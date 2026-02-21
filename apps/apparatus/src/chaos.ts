@@ -9,22 +9,28 @@ export function eicarHandler(req: Request, res: Response) {
     res.send(EICAR_STRING);
 }
 
-export function crashHandler(req: Request, res: Response) {
-    res.send("Crashing server in 1 second...");
+export function scheduleCrash(delayMs = 1000) {
     setTimeout(() => {
         process.exit(1);
-    }, 1000);
+    }, delayMs);
+}
+
+export function crashHandler(req: Request, res: Response) {
+    res.send("Crashing server in 1 second...");
+    scheduleCrash(1000);
 }
 
 let cpuSpikeRunning = false;
+let cpuSpikeCancelled = false;
 
 export function triggerCpuSpike(durationMs: number = 5000) {
     if (cpuSpikeRunning) return false;
     cpuSpikeRunning = true;
+    cpuSpikeCancelled = false;
     
     const end = Date.now() + durationMs;
     const spike = () => {
-        if (Date.now() > end) {
+        if (cpuSpikeCancelled || Date.now() > end) {
             cpuSpikeRunning = false;
             return;
         }
@@ -33,6 +39,13 @@ export function triggerCpuSpike(durationMs: number = 5000) {
         setImmediate(spike);
     };
     spike();
+    return true;
+}
+
+export function stopCpuSpike() {
+    if (!cpuSpikeRunning) return false;
+    cpuSpikeCancelled = true;
+    cpuSpikeRunning = false;
     return true;
 }
 
@@ -48,20 +61,29 @@ export function cpuSpikeHandler(req: Request, res: Response) {
 }
 
 let memoryHogs: Buffer[] = [];
+
+export function clearMemorySpike() {
+    memoryHogs = [];
+    if (global.gc) global.gc(); // Requires --expose-gc
+    return "Memory cleared";
+}
+
+export function allocateMemorySpike(amountMb: number) {
+    const buf = Buffer.alloc(amountMb * 1024 * 1024, "M");
+    memoryHogs.push(buf);
+    return `Allocated ${amountMb}MB. Total allocated chunks: ${memoryHogs.length}`;
+}
+
 export function memorySpikeHandler(req: Request, res: Response) {
     const action = req.body?.action || req.query.action || "allocate";
     const amountMb = parseInt(req.body?.amount || req.query.amount as string) || 100;
 
     if (action === "clear") {
-        memoryHogs = [];
-        if (global.gc) global.gc(); // Requires --expose-gc
-        return res.send("Memory cleared");
+        return res.send(clearMemorySpike());
     }
 
     try {
-        const buf = Buffer.alloc(amountMb * 1024 * 1024, "M");
-        memoryHogs.push(buf);
-        res.send(`Allocated ${amountMb}MB. Total allocated chunks: ${memoryHogs.length}`);
+        res.send(allocateMemorySpike(amountMb));
     } catch (e: any) {
         res.status(500).send(`Allocation failed: ${e.message}`);
     }

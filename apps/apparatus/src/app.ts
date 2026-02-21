@@ -4,6 +4,7 @@ import swaggerUi from "swagger-ui-express";
 import compression from "compression";
 import multer from "multer";
 import path from "path";
+import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { cfg } from "./config.js";
 import { logger } from "./logger.js";
@@ -13,7 +14,7 @@ import { register, httpRequestDurationMicroseconds, httpRequestsTotal } from "./
 import { swaggerDocument } from "./swagger.js";
 import { getHistory, clearHistory } from "./history.js";
 import { proxyHandler } from "./proxy.js";
-import { jwtDebugHandler } from "./jwt-debug.js";
+import { authForgeHandler, authVerifyHandler, jwtDebugHandler, jwtDebugPostHandler } from "./jwt-debug.js";
 import { rateLimitHandler } from "./ratelimit.js";
 import { graphqlHandler } from "./graphql.js";
 import { jwksHandler, tokenMintHandler, oidcDiscoveryHandler } from "./oidc.js";
@@ -27,19 +28,44 @@ import { eicarHandler, crashHandler, cpuSpikeHandler, memorySpikeHandler } from 
 import { kvHandler } from "./kv.js";
 import { scriptHandler } from "./scripting.js";
 import { pcapHandler, harReplayHandler } from "./forensics.js";
-import { clusterAttackHandler, getClusterMembers } from "./cluster.js";
+import { clusterAttackHandler, clusterAttackStopHandler, getClusterMembers } from "./cluster.js";
 import { tarpitMiddleware, tarpitListHandler, tarpitReleaseHandler } from "./tarpit.js";
 import { selfHealingMiddleware, getHealthStatus } from "./self-healing.js";
 import { deceptionHandler, deceptionHistoryHandler, deceptionClearHandler } from "./deception.js";
 import { redTeamValidateHandler } from "./redteam.js";
 import { activeShieldMiddleware, sentinelHandler } from "./sentinel.js";
-import { ghostHandler } from "./ghosting.js";
+import {
+    ghostCreateHandler,
+    ghostDeleteHandler,
+    ghostHandler,
+    ghostMockMiddleware,
+    ghostStartHandler,
+    ghostStopHandler,
+} from "./ghosting.js";
 import { polymorphicRouteMiddleware, mtdHandler } from "./mtd.js";
 import { victimRouter } from "./victim/index.js";
 import { chat } from "./ai/client.js";
+import {
+    autopilotConfigHandler,
+    autopilotKillHandler,
+    autopilotReportsHandler,
+    autopilotStartHandler,
+    autopilotStatusHandler,
+    autopilotStopHandler,
+} from "./ai/redteam.js";
 import { runEscapeScan } from "./escape/index.js";
 import { triggerSupplyChainAttack } from "./simulator/supply-chain.js";
-import { scenarioListHandler, scenarioSaveHandler, scenarioRunHandler } from "./scenarios.js";
+import { getGraphHandler, injectMalwareHandler, resetGraphHandler } from "./simulator/dependency-graph.js";
+import { scenarioListHandler, scenarioSaveHandler, scenarioRunHandler, scenarioRunStatusHandler } from "./scenarios.js";
+import {
+    drillCancelHandler,
+    drillDebriefHandler,
+    drillListHandler,
+    drillMarkDetectedHandler,
+    drillRunHandler,
+    drillStatusHandler,
+} from "./drills.js";
+import { startDemoLoop, stopDemoLoop, getDemoConfig, updateDemoConfig, type DemoConfig } from "./demo-mode.js";
 import { request } from "undici";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -49,14 +75,73 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 
 
 export function createApp(): Express {
     const app = express();
+    app.set("trust proxy", false);
+    const isTrafficPattern = (value: unknown): value is DemoConfig["pattern"] => {
+        return value === "steady" || value === "sine" || value === "spiky";
+    };
+    const clampNumber = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-    // 0. Always enable CORS first for local dev
+    if (cfg.demoMode) {
+        logger.warn("Demo mode enabled: CORS allows all origins. Do not expose this instance to untrusted networks.");
+    }
+
+    const runningInContainer = Boolean(process.env.KUBERNETES_SERVICE_HOST) || existsSync("/.dockerenv");
+    if (cfg.host === "127.0.0.1" && runningInContainer) {
+        logger.warn("HOST is set to 127.0.0.1 in a containerized environment. Set HOST=0.0.0.0 for external/container networking.");
+    }
+
+    const safeOrigins = new Set([
+        "http://localhost:8080",
+        "http://localhost:8090",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8090",
+    ]);
+
+    // 0. CORS (safe localhost defaults, permissive only in demo mode)
     app.use((req, res, next) => {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Headers", "*");
-        res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-        if (req.method === "OPTIONS") return res.sendStatus(204);
+        const origin = req.headers.origin;
+        
+        if (typeof origin === 'string') {
+            // Strict: only allow if origin is present AND matches (or demo mode is on)
+            const isAllowed = cfg.demoMode || safeOrigins.has(origin);
+
+            if (isAllowed) {
+                res.setHeader("Access-Control-Allow-Origin", origin);
+                res.setHeader("Vary", "Origin");
+                res.setHeader("Access-Control-Allow-Headers", "*");
+                res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+            }
+        }
+
+        if (req.method === "OPTIONS") {
+            // Always return 204. If not allowed, headers are missing -> browser blocks.
+            return res.sendStatus(204);
+        }
+
         next();
+    });
+
+    // 0.1 Critical Infrastructure (Always accessible)
+    app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
+    app.get("/health/pro", (_req, res) => res.json(getHealthStatus()));
+    app.get("/sse", sseHandler);
+    app.get("/metrics", async (_req, res) => {
+        try {
+            res.set("Content-Type", register.contentType);
+            res.end(await register.metrics());
+        } catch {
+            res.status(500).json({ error: "Failed to collect metrics" });
+        }
+    });
+
+    // 0.2 Dashboard Documentation API (Always accessible for help system)
+    app.get("/api/docs-index", (_req, res) => {
+        const docsIndexPath = path.join(__dirname, "dist-dashboard", "docs-index.json");
+        res.sendFile(docsIndexPath, (error) => {
+            if (error && !res.headersSent) {
+                res.status(404).json({ error: "Documentation index not found" });
+            }
+        });
     });
 
     // 1. Moving Target Defense (Hide everything if active)
@@ -131,29 +216,20 @@ export function createApp(): Express {
     // 1.5 Active Shield (Virtual Patching) - Moved here to access parsed body
     app.use(activeShieldMiddleware);
 
-    // CORS Configuration - Restrict to localhost/safe origins in production
-    app.use((req, res, next) => {
-        const origin = req.headers.origin;
-        const safeOrigins = [
-            "http://localhost:8080", 
-            "http://localhost:8090", 
-            "http://127.0.0.1:8080", 
-            "http://127.0.0.1:8090"
-        ];
-        
-        if (cfg.demoMode || (origin && safeOrigins.includes(origin)) || !origin) {
-             res.setHeader("Access-Control-Allow-Origin", origin || "*");
-             res.setHeader("Access-Control-Allow-Headers", "*");
-             res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-        }
-        
-        if (req.method === "OPTIONS") return res.sendStatus(204);
-        next();
-    });
-
     // Security Gate for Dangerous Endpoints
     const securityGate = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        const isLocal = req.ip === "127.0.0.1" || req.ip === "::1";
+        const directIp = req.socket.remoteAddress;
+        
+        if (!directIp) {
+            return res.status(403).json({ error: "Access denied: Unknown source." });
+        }
+
+        const isLocal =
+            directIp === "127.0.0.1" ||
+            directIp === "::1" ||
+            directIp === "::ffff:127.0.0.1" ||
+            directIp.startsWith("::ffff:127.");
+            
         if (!cfg.demoMode && !isLocal) {
             return res.status(403).json({ error: "Access denied. Enable demo mode or use localhost." });
         }
@@ -162,40 +238,64 @@ export function createApp(): Express {
 
     // Protect dangerous endpoints
     app.use("/api/simulator", securityGate);
+    app.use("/api/redteam/autopilot", securityGate);
     app.use("/_sensor", securityGate);
     app.use("/proxy", securityGate);
+
+    // Virtual Ghost endpoints should be resolved before route handlers.
+    app.use(ghostMockMiddleware);
     
     // Scenario Engine
     app.get("/scenarios", securityGate, scenarioListHandler);
     app.post("/scenarios", securityGate, scenarioSaveHandler);
     app.post("/scenarios/:id/run", securityGate, scenarioRunHandler);
+    app.get("/scenarios/:id/status", securityGate, scenarioRunStatusHandler);
 
-    // Prometheus Metrics Endpoint
-    app.get("/metrics", async (_req, res) => {
-        try {
-            res.set("Content-Type", register.contentType);
-            res.end(await register.metrics());
-        } catch (ex) {
-            res.status(500).send(ex);
-        }
-    });
+    // Breach Protocol Drill Engine
+    app.get("/drills", securityGate, drillListHandler);
+    app.post("/drills/:id/run", securityGate, drillRunHandler);
+    app.get("/drills/:id/status", securityGate, drillStatusHandler);
+    app.post("/drills/:id/mark-detected", securityGate, drillMarkDetectedHandler);
+    app.post("/drills/:id/cancel", securityGate, drillCancelHandler);
+    app.get("/drills/:id/debrief", securityGate, drillDebriefHandler);
 
     // Swagger Documentation
     app.use("/docs", swaggerUi.serve as unknown as express.RequestHandler[], swaggerUi.setup(swaggerDocument) as unknown as express.RequestHandler);
 
-    app.get("/healthz", (_req, res) => res.status(200).json({ status: "ok" }));
-    app.get("/health/pro", (_req, res) => res.json(getHealthStatus()));
-    app.get("/sse", sseHandler);
-
     // Demo Mode & Integrations Control (Dashboard parity)
     app.get("/_sensor/demo", (_req, res) => {
-        res.json({ success: true, demo_mode: cfg.demoMode });
+        res.json({ success: true, ...getDemoConfig() });
     });
 
     app.all("/_sensor/demo/toggle", (_req, res) => {
-        cfg.demoMode = !cfg.demoMode;
-        logger.info(`Apparatus Demo mode toggled to: ${cfg.demoMode}`);
-        res.json({ success: true, demo_mode: cfg.demoMode });
+        const config = getDemoConfig();
+        if (config.enabled) {
+            stopDemoLoop();
+        } else {
+            startDemoLoop();
+        }
+        res.json({ success: true, ...getDemoConfig() });
+    });
+
+    app.put("/_sensor/demo/config", (req, res) => {
+        const body = req.body;
+        if (!body || typeof body !== 'object') {
+             return res.status(400).json({ error: "Invalid payload" });
+        }
+
+        const updates: Partial<DemoConfig> = {};
+        const { intensity, errorRate, latencyBase, attackFrequency, pattern, targetPath } = body;
+
+        if (Number.isFinite(intensity)) updates.intensity = clampNumber(Number(intensity), 0, 100);
+        if (Number.isFinite(errorRate)) updates.errorRate = clampNumber(Number(errorRate), 0, 100);
+        if (Number.isFinite(latencyBase)) updates.latencyBase = clampNumber(Number(latencyBase), 0, 30000);
+        if (Number.isFinite(attackFrequency)) updates.attackFrequency = clampNumber(Number(attackFrequency), 0, 100);
+        if (isTrafficPattern(pattern)) updates.pattern = pattern;
+        if (typeof targetPath === 'string' && targetPath.startsWith('/')) updates.targetPath = targetPath;
+        if (targetPath === null) updates.targetPath = targetPath;
+
+        updateDemoConfig(updates);
+        res.json({ success: true, ...getDemoConfig() });
     });
 
     app.get("/_sensor/config/integrations", (_req, res) => {
@@ -228,6 +328,7 @@ export function createApp(): Express {
     // Visual Dashboard - React App
     const dashboardPath = path.join(__dirname, "dist-dashboard");
     app.use("/dashboard", express.static(dashboardPath));
+    app.get("/autopilot", (_req, res) => res.redirect("/dashboard/autopilot"));
     
     // SPA Fallback for Dashboard
     app.get("/dashboard/*", (_req, res) => {
@@ -239,6 +340,7 @@ export function createApp(): Express {
 
     // Debugging Tools
     app.get("/debug/jwt", jwtDebugHandler);
+    app.post("/debug/jwt", jwtDebugPostHandler);
     app.get("/ratelimit", rateLimitHandler);
     app.get("/sysinfo", sysInfoHandler);
     app.get("/dns", dnsHandler);
@@ -251,6 +353,8 @@ export function createApp(): Express {
     app.get("/.well-known/jwks.json", jwksHandler);
     app.get("/.well-known/openid-configuration", oidcDiscoveryHandler);
     app.all("/auth/token", tokenMintHandler);
+    app.post("/auth/forge", securityGate, authForgeHandler);
+    app.post("/auth/verify", securityGate, authVerifyHandler);
 
     // Bandwidth Tests
     app.post("/sink", sinkHandler);
@@ -272,13 +376,24 @@ export function createApp(): Express {
     app.post("/replay", harReplayHandler);
 
     // Distributed Cluster
-    app.post("/cluster/attack", clusterAttackHandler);
+    app.post("/cluster/attack", securityGate, clusterAttackHandler);
+    app.post("/cluster/attack/stop", securityGate, clusterAttackStopHandler);
     app.get("/cluster/members", (_req, res) => res.json(getClusterMembers()));
 
     // Advanced Defense & Offense
     app.get("/redteam/validate", redTeamValidateHandler);
+    app.get("/api/redteam/autopilot/config", securityGate, autopilotConfigHandler);
+    app.post("/api/redteam/autopilot/start", securityGate, autopilotStartHandler);
+    app.post("/api/redteam/autopilot/stop", securityGate, autopilotStopHandler);
+    app.post("/api/redteam/autopilot/kill", securityGate, autopilotKillHandler);
+    app.get("/api/redteam/autopilot/status", securityGate, autopilotStatusHandler);
+    app.get("/api/redteam/autopilot/reports", securityGate, autopilotReportsHandler);
     app.all("/sentinel/rules", sentinelHandler);
-    app.get("/ghosts", ghostHandler);
+    app.get("/ghosts", securityGate, ghostHandler);
+    app.post("/ghosts", securityGate, ghostCreateHandler);
+    app.delete("/ghosts/:id", securityGate, ghostDeleteHandler);
+    app.post("/ghosts/start", securityGate, ghostStartHandler);
+    app.post("/ghosts/stop", securityGate, ghostStopHandler);
     app.all("/mtd", mtdHandler);
 
     // Tarpit Monitor API
@@ -345,6 +460,10 @@ export function createApp(): Express {
             res.status(500).json({ error: e.message });
         }
     });
+    
+    app.get("/api/simulator/dependencies", securityGate, getGraphHandler);
+    app.post("/api/simulator/dependencies/infect", securityGate, injectMalwareHandler);
+    app.post("/api/simulator/dependencies/reset", securityGate, resetGraphHandler);
 
     // Escape Artist API
     app.post("/api/escape/scan", async (req, res) => {

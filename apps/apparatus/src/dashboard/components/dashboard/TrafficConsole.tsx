@@ -3,6 +3,7 @@ import { Pause, Play } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { TrafficGenerator } from './TrafficGenerator';
 import { useTrafficStream, TrafficEvent } from '../../hooks/useTrafficStream';
 import { cn } from '../ui/cn';
 
@@ -36,7 +37,7 @@ export function TrafficConsole() {
       // Rough RPS estimation based on timestamp spread of buffer
       const newest = new Date(events[0].timestamp).getTime();
       const oldest = new Date(events[events.length - 1].timestamp).getTime();
-      const durationSec = (newest - oldest) / 1000 || 1;
+      const durationSec = Math.max((newest - oldest) / 1000, 1);
       
       return {
           rps: Math.round(total / durationSec),
@@ -74,15 +75,17 @@ export function TrafficConsole() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
         {/* Main Visualizer */}
-        <div className="lg:col-span-3 h-full flex flex-col gap-4">
-           <Card variant="panel" className="flex-1 relative overflow-hidden flex flex-col">
+        <div className="lg:col-span-6 h-full flex flex-col gap-4 min-h-0">
+           <Card variant="panel" className="flex-1 relative overflow-hidden flex flex-col min-h-0">
               <div className="absolute top-4 right-4 z-10 flex gap-2">
                   {(['2xx', '3xx', '4xx', '5xx'] as const).map(cat => (
                       <button
                         key={cat}
                         onClick={() => toggleFilter(cat)}
+                        aria-pressed={filters.has(cat)}
+                        aria-label={`Filter ${cat} responses`}
                         className={cn(
                             "px-2 py-1 text-[10px] font-mono rounded border transition-all",
                             filters.has(cat) 
@@ -97,7 +100,12 @@ export function TrafficConsole() {
                       </button>
                   ))}
                   <div className="w-px h-6 bg-neutral-800 mx-2" />
-                  <Button size="sm" variant="ghost" onClick={() => setIsPaused(!isPaused)}>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => setIsPaused(!isPaused)}
+                    aria-label={isPaused ? 'Resume traffic stream' : 'Pause traffic stream'}
+                  >
                       {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
                   </Button>
               </div>
@@ -106,30 +114,48 @@ export function TrafficConsole() {
            </Card>
         </div>
 
+        {/* Generator Panel */}
+        <div className="lg:col-span-3 h-full min-h-0">
+            <TrafficGenerator />
+        </div>
+
         {/* Live List */}
-        <Card variant="glass" className="h-full flex flex-col">
+        <Card variant="glass" className="lg:col-span-3 h-full flex flex-col min-h-0">
             <CardHeader className="flex-none border-b border-white/5 pb-3">
                 <CardTitle className="text-xs">Live Feed</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-0">
-                <div className="divide-y divide-white/5 font-mono text-[10px]">
-                    {filteredEvents.slice(0, 50).map((ev, i) => (
-                        <div key={i} className="p-3 hover:bg-white/5 flex justify-between items-center group">
-                            <div className="flex flex-col gap-1 overflow-hidden">
-                                <div className="flex items-center gap-2">
-                                    <Badge size="sm" variant={
-                                        ev.status >= 500 ? 'danger' :
-                                        ev.status >= 400 ? 'warning' :
-                                        ev.status >= 300 ? 'info' : 'success'
-                                    }>
-                                        {ev.method} {ev.status}
-                                    </Badge>
-                                    <span className="text-neutral-500">{ev.latencyMs}ms</span>
+            <CardContent className="flex-1 overflow-y-auto p-0 min-h-0">
+                <div className="divide-y divide-white/5 font-mono text-[11px]">
+                    {filteredEvents.slice(0, 50).map((ev) => {
+                        const isError = ev.status >= 500;
+                        const isWarning = ev.status >= 400 && ev.status < 500;
+                        
+                        return (
+                            <div 
+                                key={ev.id} 
+                                className={cn(
+                                    "p-3 flex justify-between items-center group transition-colors",
+                                    isError ? "bg-danger/5 hover:bg-danger/10" :
+                                    isWarning ? "bg-warning/5 hover:bg-warning/10" :
+                                    "hover:bg-white/5"
+                                )}
+                            >
+                                <div className="flex flex-col gap-1 overflow-hidden">
+                                    <div className="flex items-center gap-2">
+                                        <Badge size="sm" variant={
+                                            isError ? 'danger' :
+                                            isWarning ? 'warning' :
+                                            ev.status >= 300 ? 'info' : 'success'
+                                        }>
+                                            {ev.method} {ev.status}
+                                        </Badge>
+                                        <span className="text-neutral-400 font-medium">{ev.latencyMs}ms</span>
+                                    </div>
+                                    <span className="text-neutral-200 truncate font-medium" title={ev.path}>{ev.path}</span>
                                 </div>
-                                <span className="text-neutral-300 truncate" title={ev.path}>{ev.path}</span>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </CardContent>
         </Card>
@@ -138,7 +164,10 @@ export function TrafficConsole() {
   );
 }
 
-// Inline canvas component for now (similar to ClusterMap but specialized for Waterfall)
+const MAX_LATENCY_MS = 1000;
+const TIME_WINDOW_MS = 10_000;
+const LABEL_FADE_MS = 2000;
+
 function TrafficWaterfall({ events, paused }: { events: TrafficEvent[], paused: boolean }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const eventsRef = useRef(events);
@@ -167,29 +196,58 @@ function TrafficWaterfall({ events, paused }: { events: TrafficEvent[], paused: 
         let frameId: number;
         
         const render = () => {
-            if (document.hidden || paused) {
-                if (!paused) frameId = requestAnimationFrame(render);
-                return;
+            if (document.hidden) return;
+
+            if (paused) {
+                // One-time clear when paused to avoid ghosting
+                // Or just don't request next frame, but ensure current frame is clean or frozen correctly.
+                // The review suggested clearing or keeping data.
+                // If we want to "freeze", we should stop updating eventsRef but keep rendering? 
+                // But the prop `events` becomes [] when paused in the parent.
+                // If events is [], we should probably clear the canvas.
             }
 
             if (!canvas.parentElement) return;
             const width = canvas.parentElement.clientWidth;
             const height = canvas.parentElement.clientHeight;
 
-            // Fade effect
-            ctx.fillStyle = 'rgba(10, 12, 17, 0.2)';
-            ctx.fillRect(0, 0, width, height);
+            // Full clear instead of fade for performance and to fix ghosting
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Grid & Labels
+            ctx.strokeStyle = 'rgba(31, 38, 51, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            const latencySteps = [200, 400, 600, 800];
+            for (const ms of latencySteps) {
+                const y = height - Math.min((ms / MAX_LATENCY_MS) * height, height - 20);
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(112, 128, 153, 0.8)';
+            ctx.font = '11px JetBrains Mono';
+            for (const ms of latencySteps) {
+                const y = height - Math.min((ms / MAX_LATENCY_MS) * height, height - 20);
+                ctx.fillText(`${ms}ms`, 8, y - 6);
+            }
 
             const now = Date.now();
-            const timeWindow = 10000; // 10s view
 
-            eventsRef.current.forEach(ev => {
+            // Optimize loop: events are sorted by time (newest first)
+            // But newest first means we start with small 'age'.
+            // We want to stop when age > TIME_WINDOW_MS.
+            for (const ev of eventsRef.current) {
                 const eventTime = new Date(ev.timestamp).getTime();
                 const age = now - eventTime;
-                if (age > timeWindow) return;
+                
+                // Since events are newest first, age increases as we iterate.
+                // Once age > TIME_WINDOW_MS, all subsequent events are also too old.
+                if (age > TIME_WINDOW_MS) break;
 
-                const x = width - ((age / timeWindow) * width);
-                const y = height - Math.min((ev.latencyMs / 1000) * height, height - 20);
+                const x = width - ((age / TIME_WINDOW_MS) * width);
+                const y = height - Math.min((ev.latencyMs / MAX_LATENCY_MS) * height, height - 20);
 
                 let color = '#00FF94';
                 if (ev.status >= 500) color = '#FF0055';
@@ -200,17 +258,42 @@ function TrafficWaterfall({ events, paused }: { events: TrafficEvent[], paused: 
                 ctx.beginPath();
                 ctx.arc(x, y, 2, 0, Math.PI * 2);
                 ctx.fill();
-            });
 
-            frameId = requestAnimationFrame(render);
+                // Draw Label for recent events
+                if (age < LABEL_FADE_MS) {
+                    const opacity = 1 - (age / LABEL_FADE_MS);
+                    ctx.font = '11px JetBrains Mono';
+                    
+                    // Shadow for readability
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.fillText(`${ev.method} ${ev.path}`, x + 8, y + 4);
+                    
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            if (!paused) {
+                frameId = requestAnimationFrame(render);
+            }
         };
 
+        // If paused, render once to clear/state update, then stop.
+        // If not paused, start loop.
         render();
+
         return () => {
             window.removeEventListener('resize', resize);
-            cancelAnimationFrame(frameId);
+            if (frameId) cancelAnimationFrame(frameId);
         };
-    }, [paused]);
+    }, [paused]); // Re-run when paused changes
 
-    return <canvas ref={canvasRef} className="w-full h-full block" />;
+    return <canvas 
+        ref={canvasRef} 
+        className="w-full h-full block" 
+        role="img"
+        aria-label={`Traffic waterfall chart showing ${events.length} requests over the last ${TIME_WINDOW_MS/1000} seconds`}
+    />;
 }

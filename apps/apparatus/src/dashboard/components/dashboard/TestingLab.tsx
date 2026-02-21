@@ -3,8 +3,8 @@ import { FlaskConical, Play, CheckCircle2, XCircle, ShieldCheck } from 'lucide-r
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useEscapeArtist } from '../../hooks/useEscapeArtist';
-import { cn } from '../ui/cn';
 
 export function TestingLab() {
   const { runScan, lastResult, isLoading } = useEscapeArtist();
@@ -47,27 +47,22 @@ export function TestingLab() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-mono text-neutral-400 uppercase">DLP Payload</label>
-                            <div className="grid grid-cols-2 gap-2 mt-1">
-                                {['manual', 'cc', 'ssn', 'email'].map(type => (
-                                    <button
-                                        key={type}
-                                        type="button"
-                                        onClick={() => setDlpType(type)}
-                                        className={cn(
-                                            "px-3 py-2 text-xs font-mono rounded-sm border transition-colors",
-                                            dlpType === type 
-                                                ? "bg-primary-900/30 border-primary-500 text-primary-400" 
-                                                : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                                        )}
-                                    >
-                                        {type.toUpperCase()}
-                                    </button>
-                                ))}
-                            </div>
+                            <label className="text-xs font-mono text-neutral-400 uppercase mb-1 block">DLP Payload</label>
+                            <Select value={dlpType} onValueChange={setDlpType}>
+                                <SelectTrigger className="w-full bg-neutral-900 border-neutral-800 text-neutral-300 h-9 font-mono text-xs">
+                                    <SelectValue placeholder="Select payload type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-neutral-900 border-neutral-800">
+                                    {['manual', 'cc', 'ssn', 'email'].map(type => (
+                                        <SelectItem key={type} value={type} className="text-neutral-300 hover:bg-neutral-800 cursor-pointer font-mono text-xs">
+                                            {type.toUpperCase()}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="pt-4">
-                            <Button type="submit" variant="primary" className="w-full" disabled={isLoading}>
+                            <Button type="submit" variant="default" className="w-full" isLoading={isLoading}>
                                 {isLoading ? 'Scanning...' : 'Run Egress Scan'}
                                 {!isLoading && <Play className="h-4 w-4 ml-2" />}
                             </Button>
@@ -101,7 +96,7 @@ export function TestingLab() {
                                 return (
                                     <div key={i} className="p-4">
                                         <div className="flex items-center gap-2 mb-3">
-                                            <Badge variant="neutral" className="font-mono">{group.protocol.toUpperCase()}</Badge>
+                                            <Badge variant="secondary" className="font-mono">{group.protocol.toUpperCase()}</Badge>
                                         </div>
                                         <div className="space-y-2">
                                             {checks.map((check: any, j: number) => {
@@ -109,14 +104,14 @@ export function TestingLab() {
                                                 return (
                                                     <div key={j} className="flex items-start gap-3 bg-neutral-900/30 p-2 rounded text-xs font-mono">
                                                         {isSuccess ? (
-                                                            <XCircle className="h-4 w-4 text-danger-500 mt-0.5 shrink-0" />
+                                                            <XCircle className="h-4 w-4 text-destructive-500 mt-0.5 shrink-0" />
                                                         ) : (
-                                                            <CheckCircle2 className="h-4 w-4 text-success-500 mt-0.5 shrink-0" />
+                                                            <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
                                                         )}
                                                         <div className="flex-1">
                                                             <div className="flex justify-between">
                                                                 <span className="text-neutral-300 font-bold">{check.target || 'Egress Check'}</span>
-                                                                <span className={isSuccess ? "text-danger-400" : "text-success-400"}>
+                                                                <span className={isSuccess ? "text-destructive-400" : "text-green-400"}>
                                                                     {isSuccess ? 'BREACHED' : 'BLOCKED'}
                                                                 </span>
                                                             </div>

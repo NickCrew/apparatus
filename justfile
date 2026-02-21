@@ -91,6 +91,14 @@ reset-cache:
 gen-certs:
     cd apps/apparatus && pnpm run gen-self-signed
 
+# Symlink apparatus tools into ~/bin (or --target DIR)
+link-tools *args:
+    bash scripts/link-tools.sh {{args}}
+
+# Remove apparatus tool symlinks
+unlink-tools *args:
+    bash scripts/link-tools.sh --unlink {{args}}
+
 # Show the Nx dependency graph
 graph:
     pnpm nx graph

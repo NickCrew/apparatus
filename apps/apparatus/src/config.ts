@@ -8,7 +8,7 @@ function parsePort(value: string | undefined, defaultPort: number): number {
 }
 
 export const cfg = {
-    host: process.env.HOST || "0.0.0.0",
+    host: process.env.HOST || "127.0.0.1",
     portHttp1: parsePort(process.env.PORT_HTTP1, 8090),
     portHttp2: parsePort(process.env.PORT_HTTP2, 8443),
     portTcp: parsePort(process.env.PORT_TCP, 9000),
@@ -28,3 +28,16 @@ export const cfg = {
     tunnelUrl: process.env.TUNNEL_URL || "",
     tunnelApiKey: process.env.TUNNEL_API_KEY || ""
 };
+
+export const MTD_SKIP_ROUTE_PREFIXES = [
+    "/mtd",
+    "/health",
+    "/healthz",
+    "/sse",
+    "/dashboard",
+    "/assets",
+    "/_sensor",
+    "/metrics",
+    "/docs",
+    "/api/docs-index",
+] as const;

@@ -68,11 +68,14 @@ export function DeceptionConsole() {
                                     onClick={() => setSelectedEvent(ev)}
                                     aria-label={`Event: ${ev.type} from ${ev.ip} at ${ev.route}`}
                                     className={cn(
-                                        "w-full text-left p-3 hover:bg-neutral-900/50 transition-colors flex items-center gap-4 group border-l-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset",
-                                        isSelected ? "border-primary-500 bg-neutral-900/80" : "border-transparent"
+                                        "w-full text-left p-3 transition-colors flex items-center gap-4 group border-l-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+                                        isSelected ? "border-primary bg-primary/[0.08]" : 
+                                        ev.type === 'shell_command' ? "border-warning/20 bg-warning/[0.03] hover:bg-warning/[0.06]" :
+                                        ev.type === 'sqli_probe' ? "border-danger/20 bg-danger/[0.03] hover:bg-danger/[0.06]" :
+                                        "border-transparent hover:bg-white/[0.03]"
                                     )}
                                 >
-                                    <div className="text-neutral-500 text-[10px] w-16 tabular-nums">
+                                    <div className="text-neutral-500 text-[10px] w-16 tabular-nums font-bold">
                                         {new Date(ev.timestamp).toLocaleTimeString([], { hour12: false })}
                                     </div>
                                     <div className="w-24 overflow-hidden">
@@ -81,12 +84,15 @@ export function DeceptionConsole() {
                                         </Badge>
                                     </div>
                                     <div className="flex-1 truncate">
-                                        <span className="text-neutral-300 font-bold mr-2">{ev.ip}</span>
-                                        <span className="text-neutral-500">at</span>
-                                        <span className="text-primary-400 ml-2">{ev.route}</span>
+                                        <span className={cn(
+                                            "font-bold mr-2",
+                                            isSelected ? "text-primary" : "text-neutral-300"
+                                        )}>{ev.ip}</span>
+                                        <span className="text-neutral-600 font-medium">@</span>
+                                        <span className="text-neutral-400 ml-2 italic">{ev.route}</span>
                                     </div>
                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                                        <Eye className="h-3 w-3 text-neutral-400" />
+                                        <Eye className="h-3 w-3 text-primary/60" />
                                     </div>
                                 </button>
                             );

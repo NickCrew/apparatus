@@ -81,11 +81,11 @@ function CanvasWaterfall({ events }: { events: TrafficEvent[] }) {
       ctx.stroke();
 
       // Latency axis labels
-      ctx.fillStyle = 'rgba(112, 128, 153, 0.3)';
-      ctx.font = '9px JetBrains Mono';
+      ctx.fillStyle = 'rgba(112, 128, 153, 0.8)';
+      ctx.font = '11px JetBrains Mono';
       for (const ms of latencySteps) {
         const y = height - Math.min((ms / 500) * height, height - 10);
-        ctx.fillText(`${ms}ms`, 4, y - 3);
+        ctx.fillText(`${ms}ms`, 6, y - 4);
       }
 
       const now = Date.now();
@@ -124,10 +124,18 @@ function CanvasWaterfall({ events }: { events: TrafficEvent[] }) {
         ctx.globalAlpha = 1;
 
         // Fresh event label
-        if (age < 1500) {
-          ctx.fillStyle = `rgba(112, 128, 153, ${0.5 * (1 - age / 1500)})`;
-          ctx.font = '9px JetBrains Mono';
-          ctx.fillText(`${ev.method} ${ev.path}`, x + 6, y + 1);
+        if (age < 2500) {
+          const labelAlpha = Math.max(0, 1 - age / 2500);
+          ctx.font = '11px JetBrains Mono';
+          
+          // Shadow for contrast
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+          ctx.shadowBlur = 4;
+          
+          ctx.fillStyle = `rgba(255, 255, 255, ${labelAlpha * 0.9})`;
+          ctx.fillText(`${ev.method} ${ev.path}`, x + 8, y + 4);
+          
+          ctx.shadowBlur = 0;
         }
       });
 

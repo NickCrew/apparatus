@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
-import * as jose from 'jose';
+import jwt from 'jsonwebtoken';
 
 const app = createApp();
 
@@ -21,6 +21,126 @@ describe('Advanced Features', () => {
         it('should fail with missing header', async () => {
             const response = await request(app).get('/debug/jwt');
             expect(response.status).toBe(400);
+        });
+
+        it('should decode with POST payload and validate RS256 signature', async () => {
+            const forged = await request(app).post('/auth/forge').send({ sub: 'debug-user' });
+            expect(forged.status).toBe(200);
+
+            const response = await request(app)
+                .post('/debug/jwt')
+                .send({ token: forged.body.token });
+
+            expect(response.status).toBe(200);
+            expect(response.body.valid).toBe(true);
+            expect(response.body.payload.sub).toBe('debug-user');
+        });
+
+        it('should reject malformed token via POST', async () => {
+            const response = await request(app)
+                .post('/debug/jwt')
+                .send({ token: 'not-a-jwt' });
+
+            expect(response.status).toBe(400);
+            expect(response.body.valid).toBe(false);
+        });
+    });
+
+    describe('Identity Token Forge', () => {
+        it('should forge a token and verify it in secure mode', async () => {
+            const forged = await request(app).post('/auth/forge').send({ sub: 'alice', role: 'user' });
+            expect(forged.status).toBe(200);
+            expect(forged.body).toHaveProperty('token');
+            expect(forged.body).toHaveProperty('hints.publicKey');
+
+            const verify = await request(app)
+                .post('/auth/verify')
+                .send({ token: forged.body.token });
+
+            expect(verify.status).toBe(200);
+            expect(verify.body.valid).toBe(true);
+            expect(verify.body.bypassed).toBe(false);
+            expect(verify.body.mode).toBe('secure');
+        });
+
+        it('should reject alg=none unless vulnerability flag is enabled', async () => {
+            const forged = await request(app).post('/auth/forge').send({ sub: 'none-user' });
+            const decoded = jwt.decode(forged.body.token, { complete: true });
+            expect(decoded && typeof decoded !== 'string').toBeTruthy();
+            const parsed = decoded as jwt.Jwt;
+
+            const noneHeader = { ...parsed.header, alg: 'none' };
+            const noneToken = `${Buffer.from(JSON.stringify(noneHeader)).toString('base64url')}.${Buffer.from(JSON.stringify(parsed.payload)).toString('base64url')}.`;
+
+            const rejected = await request(app)
+                .post('/auth/verify')
+                .send({ token: noneToken });
+            expect(rejected.status).toBe(401);
+            expect(rejected.body.valid).toBe(false);
+
+            const accepted = await request(app)
+                .post('/auth/verify')
+                .send({
+                    token: noneToken,
+                    vulnerabilities: { allowNoneAlg: true },
+                });
+            expect(accepted.status).toBe(200);
+            expect(accepted.body.valid).toBe(true);
+            expect(accepted.body.mode).toBe('none_alg');
+        });
+
+        it('should accept weak key token only when weak-key mode is enabled', async () => {
+            const weakToken = jwt.sign(
+                { sub: 'attacker', role: 'admin' },
+                'secret',
+                { algorithm: 'HS256' }
+            );
+
+            const rejected = await request(app)
+                .post('/auth/verify')
+                .send({ token: weakToken });
+            expect(rejected.status).toBe(401);
+            expect(rejected.body.valid).toBe(false);
+
+            const accepted = await request(app)
+                .post('/auth/verify')
+                .send({
+                    token: weakToken,
+                    vulnerabilities: { allowWeakKey: true },
+                });
+            expect(accepted.status).toBe(200);
+            expect(accepted.body.valid).toBe(true);
+            expect(accepted.body.mode).toBe('weak_key');
+            expect(accepted.body.matchedKey).toBe('secret');
+        });
+
+        it('should allow key confusion token only when key-confusion mode is enabled', async () => {
+            const forged = await request(app).post('/auth/forge').send({ sub: 'confusion-seed' });
+            const publicKey = forged.body?.hints?.publicKey;
+            expect(typeof publicKey).toBe('string');
+
+            const confusedToken = jwt.sign(
+                { sub: 'mallory', role: 'admin' },
+                publicKey,
+                { algorithm: 'HS256' }
+            );
+
+            const rejected = await request(app)
+                .post('/auth/verify')
+                .send({ token: confusedToken });
+            expect(rejected.status).toBe(401);
+            expect(rejected.body.valid).toBe(false);
+
+            const accepted = await request(app)
+                .post('/auth/verify')
+                .send({
+                    token: confusedToken,
+                    vulnerabilities: { allowKeyConfusion: true },
+                });
+
+            expect(accepted.status).toBe(200);
+            expect(accepted.body.valid).toBe(true);
+            expect(accepted.body.mode).toBe('key_confusion');
         });
     });
 

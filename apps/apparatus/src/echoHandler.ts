@@ -103,19 +103,28 @@ export async function echoHandler(req: Request, res: Response) {
 }
 
 export function sseHandler(req: Request, res: Response) {
+    console.log(`[SSE] New client connection request from ${req.ip}`);
+    
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
+    // Safely flush headers
+    if (res.flushHeaders) {
+        res.flushHeaders();
+    } else if (res.writeHead) {
+        res.writeHead(200);
+    }
 
     // Register this client with the SSE broadcaster
-    // Returns null if max clients reached (DoS protection)
     const clientId = sseBroadcaster.addClient(res);
 
     if (clientId === null) {
-        res.status(503).end("Too many SSE connections. Please try again later.");
+        console.error("[SSE] Max clients reached, rejecting connection");
+        res.status(503).end("Too many SSE connections.");
         return;
     }
 
-    // Heartbeat and cleanup are now handled by the broadcaster
+    console.log(`[SSE] Client ${clientId} registered successfully`);
 }

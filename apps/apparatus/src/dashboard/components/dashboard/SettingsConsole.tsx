@@ -1,18 +1,44 @@
-import { useState } from 'react';
-import { Settings, Save, Power } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Save, Power, Activity } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { useApparatus } from '../../providers/ApparatusProvider';
 import { useTheme } from '../../theme/ThemeProvider';
+import { Badge } from '../ui/Badge';
 
 export function SettingsConsole() {
   const { baseUrl, setBaseUrl, isConnected, health } = useApparatus();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [urlInput, setUrlInput] = useState(baseUrl);
+  const [demoMode, setDemoMode] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(false);
+
+  // Fetch initial demo state
+  useEffect(() => {
+      if (!baseUrl) return;
+      fetch(`${baseUrl}/_sensor/demo`)
+        .then(res => res.json())
+        .then(data => setDemoMode(data.enabled))
+        .catch(() => {});
+  }, [baseUrl]);
 
   const handleSave = (e: React.FormEvent) => {
       e.preventDefault();
       setBaseUrl(urlInput);
+  };
+
+  const toggleDemo = async () => {
+      if (!baseUrl) return;
+      setLoadingDemo(true);
+      try {
+          const res = await fetch(`${baseUrl}/_sensor/demo/toggle`, { method: 'POST' });
+          const data = await res.json();
+          setDemoMode(data.enabled);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setLoadingDemo(false);
+      }
   };
 
   return (
@@ -45,7 +71,7 @@ export function SettingsConsole() {
                     </div>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success-500' : 'bg-danger-500'}`} />
+                            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success-500' : 'bg-danger-500'}`} aria-hidden="true" />
                             <span className="text-xs font-mono text-neutral-300">
                                 {isConnected ? `CONNECTED (v${health.version || '?'})` : 'DISCONNECTED'}
                             </span>
@@ -56,6 +82,38 @@ export function SettingsConsole() {
                         </Button>
                     </div>
                 </form>
+            </CardContent>
+        </Card>
+
+        {/* Demo Mode */}
+        <Card variant="panel" className={demoMode ? "border-warning-500/50" : ""}>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-warning-500" />
+                    Simulation Mode
+                </CardTitle>
+                <CardDescription>Generate synthetic traffic and events.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-between p-4 bg-neutral-900/50 rounded-sm border border-neutral-800">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-bold text-neutral-200">Demo Traffic</span>
+                            {demoMode && <Badge variant="warning" dot>ACTIVE</Badge>}
+                        </div>
+                        <p className="text-xs text-neutral-500">
+                            Automatically generates HTTP requests, honeypot hits, and webhooks for demonstration.
+                        </p>
+                    </div>
+                    <Button 
+                        variant={demoMode ? "destructive" : "default"} 
+                        size="sm" 
+                        onClick={toggleDemo}
+                        isLoading={loadingDemo}
+                    >
+                        {demoMode ? "Stop Simulation" : "Start Simulation"}
+                    </Button>
+                </div>
             </CardContent>
         </Card>
 

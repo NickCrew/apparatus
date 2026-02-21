@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Webhook, Copy, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -14,10 +14,12 @@ export function WebhooksConsole() {
   const [selectedRequest, setSelectedRequest] = useState<WebhookRequest | null>(null);
   
   const { requests, isConnected } = useWebhooks(activeHookId);
+  const initialized = useRef(false);
 
   // Generate random ID on mount if none
   useEffect(() => {
-      if (!activeHookId) {
+      if (!initialized.current) {
+          initialized.current = true;
           const randomId = Math.random().toString(36).substring(2, 10);
           setHookId(randomId);
           setActiveHookId(randomId);
@@ -86,19 +88,22 @@ export function WebhooksConsole() {
                                 key={idx}
                                 onClick={() => setSelectedRequest(req)}
                                 className={cn(
-                                    "w-full text-left p-4 hover:bg-neutral-900/50 transition-colors flex flex-col gap-2 border-l-2",
-                                    selectedRequest === req ? "border-primary-500 bg-neutral-900/80" : "border-transparent"
+                                    "w-full text-left p-3 hover:bg-white/[0.03] transition-colors flex flex-col gap-1.5 border-l-2",
+                                    selectedRequest === req ? "border-primary bg-primary/[0.08]" : "border-transparent"
                                 )}
                             >
                                 <div className="flex justify-between items-center w-full">
                                     <Badge size="sm" variant={req.method === 'POST' ? 'info' : 'success'}>
                                         {req.method}
                                     </Badge>
-                                    <span className="text-[10px] font-mono text-neutral-500">
-                                        {new Date(req.timestamp).toLocaleTimeString()}
+                                    <span className="text-[9px] font-mono text-neutral-600 font-bold uppercase tabular-nums">
+                                        {new Date(req.timestamp).toLocaleTimeString([], { hour12: false })}
                                     </span>
                                 </div>
-                                <div className="text-xs font-mono text-neutral-300 truncate w-full">
+                                <div className={cn(
+                                    "text-[11px] font-mono truncate w-full",
+                                    selectedRequest === req ? "text-primary font-bold" : "text-neutral-400"
+                                )}>
                                     {req.ip}
                                 </div>
                             </button>

@@ -1,62 +1,62 @@
-import { type HTMLAttributes } from 'react';
-import { cn } from './cn';
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary';
-type BadgeSize = 'sm' | 'md';
+import { cn } from "./cn"
 
-interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: BadgeVariant;
-  size?: BadgeSize;
-  dot?: boolean;
+const badgeVariants = cva(
+  "inline-flex items-center rounded-sm border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 font-mono uppercase tracking-wider",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        primary: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80", // Alias
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        neutral: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80", // Alias
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        danger: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80", // Alias
+        outline: "text-foreground",
+        success: "border-transparent bg-green-500/15 text-green-500 hover:bg-green-500/25 border-green-500/20",
+        warning: "border-transparent bg-yellow-500/15 text-yellow-500 hover:bg-yellow-500/25 border-yellow-500/20",
+        info: "border-transparent bg-blue-500/15 text-blue-500 hover:bg-blue-500/25 border-blue-500/20",
+        neon: "border-primary/50 bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,240,255,0.2)]",
+      },
+      size: { // Added size variant to support legacy API
+          default: "",
+          sm: "text-[10px] px-1.5 py-0.5",
+          md: "px-2.5 py-0.5",
+          lg: "px-3 py-1 text-sm"
+      }
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {
+    dot?: boolean;
 }
 
-const variants: Record<BadgeVariant, string> = {
-  success: 'bg-success-900/20 text-success-400 border-success-500/30 shadow-[0_0_10px_rgba(0,255,148,0.1)]',
-  warning: 'bg-warning-900/20 text-warning-400 border-warning-500/30 shadow-[0_0_10px_rgba(255,184,0,0.1)]',
-  danger: 'bg-danger-900/20 text-danger-400 border-danger-500/30 shadow-[0_0_10px_rgba(255,0,85,0.1)]',
-  info: 'bg-info-900/20 text-info-400 border-info-500/30 shadow-[0_0_10px_rgba(0,163,255,0.1)]',
-  neutral: 'bg-neutral-800 text-neutral-400 border-neutral-700',
-  primary: 'bg-primary-900/20 text-primary-400 border-primary-500/30 shadow-[0_0_10px_rgba(0,240,255,0.1)]',
-};
-
-const sizes: Record<BadgeSize, string> = {
-  sm: 'px-1.5 py-0.5 text-[10px]',
-  md: 'px-2.5 py-0.5 text-xs',
-};
-
-const dotColors: Record<BadgeVariant, string> = {
-  success: 'bg-success-500',
-  warning: 'bg-warning-500',
-  danger: 'bg-danger-500',
-  info: 'bg-info-500',
-  neutral: 'bg-neutral-500',
-  primary: 'bg-primary-500',
-};
-
-export function Badge({
-  variant = 'neutral',
-  size = 'md',
-  dot = false,
-  className,
-  children,
-  ...props
-}: BadgeProps) {
+function Badge({ className, variant, size, dot, children, ...props }: BadgeProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center font-mono font-medium rounded-[2px] border uppercase tracking-wider',
-        variants[variant],
-        sizes[size],
-        className
-      )}
-      {...props}
-    >
+    <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
       {dot && (
-        <span className={cn('w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse', dotColors[variant])} />
+        <span className={cn("mr-1.5 flex h-1.5 w-1.5 rounded-full", 
+            (variant === 'destructive' || variant === 'danger') ? 'bg-destructive animate-pulse' :
+            variant === 'success' ? 'bg-green-500' :
+            variant === 'warning' ? 'bg-yellow-500' :
+            'bg-primary'
+        )} />
       )}
       {children}
-    </span>
-  );
+    </div>
+  )
 }
 
-Badge.displayName = 'Badge';
+export { Badge, badgeVariants }

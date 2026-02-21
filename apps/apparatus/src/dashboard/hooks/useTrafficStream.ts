@@ -3,6 +3,7 @@ import { useApparatus } from '../providers/ApparatusProvider';
 import { useSSE } from './useSSE';
 
 export interface TrafficEvent {
+  id: string;
   method: string;
   path: string;
   status: number;

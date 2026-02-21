@@ -133,7 +133,7 @@ export function ClusterMap({ nodes, isAttacking }: ClusterMapProps) {
             ctx.shadowBlur = 0; // Reset
 
             // Pass 3: Labels (No shadow)
-            ctx.fillStyle = '#4D5B70';
+            ctx.fillStyle = '#9BA9BF';
             peers.forEach((node, i) => {
                 const divisor = peers.length || 1;
                 const angle = (i / divisor) * Math.PI * 2 + rotation;
