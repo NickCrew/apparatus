@@ -112,7 +112,7 @@ export function TrafficGenerator() {
                   "px-3 py-2 text-left text-[11px] font-mono border transition-all rounded-[2px]",
                   config.intensity === p.intensity && config.pattern === p.pattern
                     ? "bg-primary-500/10 border-primary-500/50 text-primary-400"
-                    : "bg-white/[0.02] border-white/5 text-neutral-400 hover:bg-white/[0.05] hover:border-white/10"
+                    : "bg-neutral-900/40 border-neutral-700 text-neutral-400 hover:bg-neutral-900/70 hover:border-neutral-600"
                 )}
               >
                 {p.name.toUpperCase()}
@@ -127,7 +127,7 @@ export function TrafficGenerator() {
             <Waves className="h-3 w-3" />
             Traffic Pattern
           </label>
-          <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-sm border border-white/5">
+          <div className="grid grid-cols-3 gap-1 bg-neutral-900/60 p-1 rounded-sm border border-neutral-700">
             {(['steady', 'sine', 'spiky'] as const).map(p => (
                 <button
                     key={p}
@@ -158,7 +158,7 @@ export function TrafficGenerator() {
                 placeholder="Random endpoints (default)"
                 onChange={e => setConfig({ ...config, targetPath: e.target.value || null })}
                 onBlur={() => updateConfig({ targetPath: config.targetPath })}
-                className="w-full bg-black/40 border border-white/10 rounded-sm px-3 py-2 text-[11px] font-mono text-primary-400 placeholder:text-neutral-700 focus:outline-none focus:border-primary-500/50"
+                className="w-full bg-neutral-900/60 border border-neutral-700 rounded-sm px-3 py-2 text-[11px] font-mono text-primary-400 placeholder:text-neutral-600 focus:outline-none focus:border-primary-500/50"
             />
             {config.targetPath && (
                 <button 

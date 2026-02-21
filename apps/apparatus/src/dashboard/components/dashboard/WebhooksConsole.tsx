@@ -88,7 +88,7 @@ export function WebhooksConsole() {
                                 key={idx}
                                 onClick={() => setSelectedRequest(req)}
                                 className={cn(
-                                    "w-full text-left p-3 hover:bg-white/[0.03] transition-colors flex flex-col gap-1.5 border-l-2",
+                                    "w-full text-left p-3 hover:bg-neutral-900/50 transition-colors flex flex-col gap-1.5 border-l-2",
                                     selectedRequest === req ? "border-primary bg-primary/[0.08]" : "border-transparent"
                                 )}
                             >

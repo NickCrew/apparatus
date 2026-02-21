@@ -167,7 +167,7 @@ function ModuleRow({ label, status, variant, dot }: {
   dot?: boolean;
 }) {
   return (
-    <div className="flex justify-between items-center py-1.5 px-2 bg-white/[0.03] border border-white/[0.05]">
+    <div className="flex justify-between items-center py-1.5 px-2 bg-neutral-900/50 border border-neutral-700">
       <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">{label}</span>
       <Badge variant={variant} size="sm" dot={dot}>{status}</Badge>
     </div>

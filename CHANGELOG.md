@@ -29,6 +29,9 @@ All notable changes to this project are documented in this file.
 - Reconciled `apps/apparatus/docs/plans/ai-red-team-plan.md` with current implementation:
   - documents Autopilot as canonical red-team AI surface
   - maps implemented vs pending scope from the original plan
+- Dashboard readability/contrast pass:
+  - improved opaque backgrounds and hover contrast for key console lists
+  - updated modal/interactive element visibility to avoid transparent blending
 
 ### Security
 - Ghost mutation and traffic-control routes are now protected by `securityGate` (localhost-only unless `DEMO_MODE=true`):

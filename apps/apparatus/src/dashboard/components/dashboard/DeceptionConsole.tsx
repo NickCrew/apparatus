@@ -69,10 +69,10 @@ export function DeceptionConsole() {
                                     aria-label={`Event: ${ev.type} from ${ev.ip} at ${ev.route}`}
                                     className={cn(
                                         "w-full text-left p-3 transition-colors flex items-center gap-4 group border-l-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
-                                        isSelected ? "border-primary bg-primary/[0.08]" : 
+                                        isSelected ? "border-primary bg-primary/[0.08]" :
                                         ev.type === 'shell_command' ? "border-warning/20 bg-warning/[0.03] hover:bg-warning/[0.06]" :
                                         ev.type === 'sqli_probe' ? "border-danger/20 bg-danger/[0.03] hover:bg-danger/[0.06]" :
-                                        "border-transparent hover:bg-white/[0.03]"
+                                        "border-transparent hover:bg-neutral-900/50"
                                     )}
                                 >
                                     <div className="text-neutral-500 text-[10px] w-16 tabular-nums font-bold">

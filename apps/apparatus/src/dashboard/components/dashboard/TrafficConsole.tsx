@@ -137,7 +137,7 @@ export function TrafficConsole() {
                                     "p-3 flex justify-between items-center group transition-colors",
                                     isError ? "bg-danger/5 hover:bg-danger/10" :
                                     isWarning ? "bg-warning/5 hover:bg-warning/10" :
-                                    "hover:bg-white/5"
+                                    "hover:bg-neutral-900/50"
                                 )}
                             >
                                 <div className="flex flex-col gap-1 overflow-hidden">
