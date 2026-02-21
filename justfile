@@ -37,6 +37,42 @@ dashboard:
 repl:
     cd apps/cli && pnpm start repl
 
+# Start live-reload dev stack in tmux via tx (session defaults to "aps")
+aps-dev-up session="aps":
+    @TMUX_SESSION={{session}} tx new server-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx new dashboard-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx interrupt server-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx interrupt dashboard-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx send server-dev "cd {{justfile_directory()}} && pnpm --filter @apparatus/server dev"
+    @TMUX_SESSION={{session}} tx send dashboard-dev "cd {{justfile_directory()}} && pnpm --filter @apparatus/dashboard dev"
+    @echo "Live reload started in tmux session '{{session}}': server-dev + dashboard-dev"
+
+# Show tx/tmux status for live-reload windows
+aps-dev-status session="aps":
+    @TMUX_SESSION={{session}} tx list
+    @echo ""
+    @echo "[server-dev]"
+    @TMUX_SESSION={{session}} tx read server-dev 20
+    @echo ""
+    @echo "[dashboard-dev]"
+    @TMUX_SESSION={{session}} tx read dashboard-dev 20
+
+# Stop live-reload commands (keeps tmux windows)
+aps-dev-stop session="aps":
+    @TMUX_SESSION={{session}} tx interrupt server-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx interrupt dashboard-dev >/dev/null 2>&1 || true
+    @echo "Live reload stopped in tmux session '{{session}}'"
+
+# Restart live-reload commands in tmux
+aps-dev-restart session="aps":
+    @TMUX_SESSION={{session}} tx interrupt server-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx interrupt dashboard-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx new server-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx new dashboard-dev >/dev/null 2>&1 || true
+    @TMUX_SESSION={{session}} tx send server-dev "cd {{justfile_directory()}} && pnpm --filter @apparatus/server dev"
+    @TMUX_SESSION={{session}} tx send dashboard-dev "cd {{justfile_directory()}} && pnpm --filter @apparatus/dashboard dev"
+    @echo "Live reload restarted in tmux session '{{session}}'"
+
 # ── Test ─────────────────────────────────────────────────────
 
 # Run all tests
