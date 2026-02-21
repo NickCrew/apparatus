@@ -105,7 +105,12 @@ export function HelpSearchModal({ open, onOpenChange, onSelectDoc }: HelpSearchM
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Documentation search"
+      description="Search and open dashboard documentation pages."
+    >
       <CommandInput
         placeholder="Search documentation..."
         value={query}

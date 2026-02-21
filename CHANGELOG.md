@@ -32,6 +32,9 @@ All notable changes to this project are documented in this file.
 - Dashboard readability/contrast pass:
   - improved opaque backgrounds and hover contrast for key console lists
   - updated modal/interactive element visibility to avoid transparent blending
+- Command/help modal hardening:
+  - added hidden dialog title/description metadata for Radix accessibility compliance
+  - increased command dialog surface opacity and border contrast
 
 ### Security
 - Ghost mutation and traffic-control routes are now protected by `securityGate` (localhost-only unless `DEMO_MODE=true`):

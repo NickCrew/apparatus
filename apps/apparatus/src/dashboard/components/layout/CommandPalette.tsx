@@ -62,10 +62,15 @@ export function CommandPalette() {
   }
 
   return (
-    <CommandDialog open={open} onOpenChange={(isOpen) => {
-      setOpen(isOpen)
-      if (!isOpen) setInput("")
-    }}>
+    <CommandDialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen)
+        if (!isOpen) setInput("")
+      }}
+      title="Command palette"
+      description="Search and run dashboard navigation and system commands."
+    >
       <CommandInput
         placeholder="Type a command or search... (try '/help chaos')"
         value={input}
