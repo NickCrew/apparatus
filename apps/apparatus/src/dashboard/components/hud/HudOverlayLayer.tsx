@@ -101,9 +101,11 @@ function loadPreferences(): HudPreferences {
 
 function loadHudHidden(): boolean {
   try {
-    return localStorage.getItem(HUD_VISIBILITY_KEY) === '1';
+    const stored = localStorage.getItem(HUD_VISIBILITY_KEY);
+    // Default to hidden (true) if not explicitly set
+    return stored === null ? true : stored === '1';
   } catch {
-    return false;
+    return true; // Default to hidden
   }
 }
 
