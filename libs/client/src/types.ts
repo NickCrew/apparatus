@@ -694,6 +694,191 @@ export interface ThreatIntelStatus {
 }
 
 // ============================================================================
+// Scenarios API Types
+// ============================================================================
+
+export interface ScenarioStep {
+  id: string;
+  action: string;
+  params: Record<string, unknown>;
+  delayMs?: number;
+}
+
+export interface Scenario {
+  id: string;
+  name: string;
+  description?: string;
+  steps: ScenarioStep[];
+  createdAt: string;
+}
+
+export interface ScenarioSaveRequest {
+  id?: string;
+  name: string;
+  description?: string;
+  steps: ScenarioStep[];
+}
+
+export interface ScenarioRunResponse {
+  status: 'started';
+  executionId: string;
+  message: string;
+}
+
+export interface ScenarioRunStatus {
+  executionId: string;
+  scenarioId: string;
+  scenarioName: string;
+  status: 'running' | 'completed' | 'failed';
+  startedAt: string;
+  finishedAt?: string;
+  currentStepId?: string;
+  error?: string;
+}
+
+// ============================================================================
+// Drills API Types
+// ============================================================================
+
+export type DrillDifficulty = 'junior' | 'senior' | 'principal';
+export type DrillStatus = 'pending' | 'arming' | 'active' | 'stabilizing' | 'won' | 'failed' | 'cancelled';
+
+export interface DrillDefinition {
+  id: string;
+  name: string;
+  description: string;
+  difficulty: DrillDifficulty;
+  tags: string[];
+  briefing: string;
+  maxDurationSec: number;
+  createdAt: string;
+}
+
+export interface DrillTimelineEvent {
+  at: string;
+  type: 'system' | 'metric' | 'hint' | 'user_action' | 'status_change';
+  message: string;
+  data?: Record<string, unknown>;
+}
+
+export interface DrillSnapshot {
+  cpuPercent: number;
+  errorRate: number;
+  blockedSqliRatio: number;
+  detectedMarked: boolean;
+  clusterAttackActive: boolean;
+  ghostTrafficActive: boolean;
+}
+
+export interface DrillScore {
+  total: number;
+  ttdSec: number;
+  ttmSec: number;
+  ttrSec: number;
+  penalties: Array<{ code: string; points: number; reason: string }>;
+  bonuses: Array<{ code: string; points: number; reason: string }>;
+}
+
+export interface DrillRun {
+  runId: string;
+  drillId: string;
+  drillName: string;
+  status: DrillStatus;
+  startedAt: string;
+  finishedAt?: string;
+  detectedAt?: string;
+  mitigatedAt?: string;
+  failureReason?: string;
+  timeline: DrillTimelineEvent[];
+  lastSnapshot?: DrillSnapshot;
+  score?: DrillScore;
+  elapsedSec?: number;
+}
+
+export interface DrillRunResponse {
+  status: 'started';
+  runId: string;
+  drillId: string;
+  message: string;
+}
+
+export interface DrillMarkDetectedResponse {
+  status: 'ok';
+  run: DrillRun;
+}
+
+export interface DrillDebrief {
+  runId: string;
+  drillId: string;
+  status: DrillStatus;
+  score: DrillScore;
+  detectedAt?: string;
+  mitigatedAt?: string;
+  startedAt: string;
+  finishedAt?: string;
+  timeline: DrillTimelineEvent[];
+}
+
+// ============================================================================
+// Autopilot API Types
+// ============================================================================
+
+export interface AutopilotConfig {
+  availableTools: string[];
+  defaultAllowedTools: string[];
+  safetyDefaults: {
+    forbidCrash: boolean;
+  };
+}
+
+export interface AutopilotStartRequest {
+  objective: string;
+  maxIterations?: number;
+  intervalMs?: number;
+  scope?: {
+    allowedTools?: string[];
+    forbidCrash?: boolean;
+  };
+}
+
+export interface AutopilotSession {
+  id: string;
+  state: 'idle' | 'running' | 'stopping' | 'stopped' | 'completed' | 'failed';
+  objective?: string;
+  targetBaseUrl?: string;
+  iteration?: number;
+  startedAt?: string;
+  endedAt?: string;
+  error?: string;
+}
+
+export interface AutopilotStartResponse {
+  success: boolean;
+  sessionId: string;
+  session: AutopilotSession;
+}
+
+export interface AutopilotStopResponse {
+  success: boolean;
+  sessionId: string;
+}
+
+export interface AutopilotKillResponse {
+  success: boolean;
+  killResult: Record<string, unknown>;
+}
+
+export interface AutopilotStatusResponse {
+  active: boolean;
+  session: AutopilotSession | null;
+  latestReport: Record<string, unknown> | null;
+}
+
+export interface AutopilotReportsResponse {
+  reports: Record<string, unknown>[];
+}
+
+// ============================================================================
 // SSE (Server-Sent Events) Types
 // ============================================================================
 

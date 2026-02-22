@@ -45,6 +45,9 @@ import { VictimApi } from './categories/victim.js';
 import { WebhooksApi } from './categories/webhooks.js';
 import { GraphQLApi } from './categories/graphql.js';
 import { RealtimeApi } from './categories/realtime.js';
+import { ScenariosApi } from './categories/scenarios.js';
+import { DrillsApi } from './categories/drills.js';
+import { AutopilotApi } from './categories/autopilot.js';
 
 export class ApparatusClient {
   private readonly http: HttpClient;
@@ -68,6 +71,9 @@ export class ApparatusClient {
   private _webhooks?: WebhooksApi;
   private _graphql?: GraphQLApi;
   private _realtime?: RealtimeApi;
+  private _scenarios?: ScenariosApi;
+  private _drills?: DrillsApi;
+  private _autopilot?: AutopilotApi;
 
   constructor(options: ApparatusClientOptions) {
     this.http = new HttpClient(options);
@@ -241,6 +247,36 @@ export class ApparatusClient {
       this._realtime = new RealtimeApi(this.baseUrl, this.sseOptions);
     }
     return this._realtime;
+  }
+
+  /**
+   * Scenarios API - Multi-step attack scenario orchestration
+   */
+  get scenarios(): ScenariosApi {
+    if (!this._scenarios) {
+      this._scenarios = new ScenariosApi(this.http);
+    }
+    return this._scenarios;
+  }
+
+  /**
+   * Drills API - Breach protocol drills
+   */
+  get drills(): DrillsApi {
+    if (!this._drills) {
+      this._drills = new DrillsApi(this.http);
+    }
+    return this._drills;
+  }
+
+  /**
+   * Autopilot API - AI-driven red team autopilot
+   */
+  get autopilot(): AutopilotApi {
+    if (!this._autopilot) {
+      this._autopilot = new AutopilotApi(this.http);
+    }
+    return this._autopilot;
   }
 
   // ============================================================================

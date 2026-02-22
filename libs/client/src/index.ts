@@ -47,6 +47,9 @@ export { VictimApi } from './categories/victim.js';
 export { WebhooksApi } from './categories/webhooks.js';
 export { GraphQLApi, GraphQLQueryError } from './categories/graphql.js';
 export { RealtimeApi } from './categories/realtime.js';
+export { ScenariosApi } from './categories/scenarios.js';
+export { DrillsApi } from './categories/drills.js';
+export { AutopilotApi } from './categories/autopilot.js';
 
 // Types - Client Configuration
 export type { ApparatusClientOptions, SSEClientOptions } from './types.js';
@@ -172,6 +175,41 @@ export type {
   GraphQLRequest,
   GraphQLResponse,
   GraphQLError,
+} from './types.js';
+
+// Types - Scenarios
+export type {
+  Scenario,
+  ScenarioStep,
+  ScenarioSaveRequest,
+  ScenarioRunResponse,
+  ScenarioRunStatus,
+} from './types.js';
+
+// Types - Drills
+export type {
+  DrillDifficulty,
+  DrillStatus,
+  DrillDefinition,
+  DrillTimelineEvent,
+  DrillSnapshot,
+  DrillScore,
+  DrillRun,
+  DrillRunResponse,
+  DrillMarkDetectedResponse,
+  DrillDebrief,
+} from './types.js';
+
+// Types - Autopilot
+export type {
+  AutopilotConfig,
+  AutopilotStartRequest,
+  AutopilotSession,
+  AutopilotStartResponse,
+  AutopilotStopResponse,
+  AutopilotKillResponse,
+  AutopilotStatusResponse,
+  AutopilotReportsResponse,
 } from './types.js';
 
 // Types - SSE
