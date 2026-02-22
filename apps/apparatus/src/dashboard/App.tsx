@@ -24,6 +24,7 @@ import { AutopilotConsole } from './components/dashboard/AutopilotConsole';
 import { GhostConsole } from './components/dashboard/GhostConsole';
 import { ListenersConsole } from './components/dashboard/ListenersConsole';
 import { IncidentTimeline } from './components/dashboard/IncidentTimeline';
+import { FingerprintConsole } from './components/dashboard/FingerprintConsole';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { HelpSearchModal } from './components/modals/HelpSearchModal';
 import { DocViewer } from './components/layout/DocViewer';
@@ -74,7 +75,18 @@ function Layout() {
       <DocViewer docId={selectedDocId} onClose={closeDoc} />
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 relative">
-        <Header onHelpClick={() => setHelpModalOpen(true)} />
+        <Header
+          onHelpClick={() => setHelpModalOpen(true)}
+          onCommandClick={() => {
+            // Dispatch Cmd+K to open command palette
+            const event = new KeyboardEvent('keydown', {
+              key: 'k',
+              metaKey: true,
+              bubbles: true
+            });
+            document.dispatchEvent(event);
+          }}
+        />
         <MainContent>
           <Outlet />
         </MainContent>
@@ -97,6 +109,7 @@ export default function App() {
                 <Route index element={<Overview />} />
                 <Route path="traffic" element={<TrafficConsole />} />
                 <Route path="timeline" element={<IncidentTimeline />} />
+                <Route path="fingerprints" element={<FingerprintConsole />} />
                 <Route path="defense" element={<DefenseConsole />} />
                 <Route path="deception" element={<DeceptionConsole />} />
                 <Route path="chaos" element={<ChaosConsole />} />
