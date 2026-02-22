@@ -1,0 +1,17 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "background": "transparent",
+    "primaryColor": "#151e30",
+    "primaryTextColor": "#e8eef7",
+    "primaryBorderColor": "#1c3055",
+    "lineColor": "#4e6580",
+    "secondaryColor": "#101927",
+    "tertiaryColor": "#12213a",
+    "clusterBkg": "#0e1a2b",
+    "clusterBorder": "#1c3055",
+    "edgeLabelBackground": "#0c111c",
+    "textColor": "#dce4ec",
+    "fontFamily": "ui-sans-serif, system-ui"
+  }
+}

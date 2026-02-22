@@ -1,0 +1,11 @@
+flowchart LR
+    Warning["Safety Banner\nStress tools can disrupt service"] --> CPU["CPU Spike Controls\nDuration + quick triggers + status"]
+    CPU --> Memory["Memory Spike Controls\nAllocate/clear + allocated total"]
+    Memory --> Crash["Crash Controls\nGraceful restart path"]
+    Crash --> History["Recent Actions\nChronological experiment log"]
+
+    style Warning fill:#5a2f45
+    style CPU fill:#5f4a1d
+    style Memory fill:#1f4a45
+    style Crash fill:#4a2f56
+    style History fill:#2b4265

@@ -1,0 +1,11 @@
+flowchart LR
+    Scenario["Scenario\nName + metadata"] --> Step1["Step 1\nID + action + params + delay"]
+    Step1 --> Step2["Step 2\nID + action + params + delay"]
+    Step2 --> Step3["Step 3\nID + action + params + delay"]
+    Step3 --> Result["Execution Result\nCompleted / Failed + findings"]
+
+    style Scenario fill:#1f365a
+    style Step1 fill:#1f4a45
+    style Step2 fill:#2b4265
+    style Step3 fill:#4a2f56
+    style Result fill:#5f4a1d

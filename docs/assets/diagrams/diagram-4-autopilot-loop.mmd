@@ -1,24 +1,10 @@
-flowchart TD
-    Start["🚀 Start Session"] --> Evaluate["🔍 Evaluate Target State"]
-
-    Evaluate --> Probe["📤 Send probe requests"]
-    Probe --> Analyze["📊 Analyze responses"]
-    Analyze --> Assess["💪 Assess system health"]
-    Assess --> Identify["🎯 Identify weak points"]
-
-    Identify --> Select["🎰 Select Tool"]
-    Select --> Previous["📋 Consider previous findings"]
-    Previous --> Choose["🔧 Choose next action"]
-    Choose --> Weight["⚖️ Probability weighting"]
-
-    Weight --> Execute["⚡ Execute Tool"]
-    Execute --> Tools["🔨 CPU spike / Memory spike<br/>Cluster attack / MTD rotation"]
-    Tools --> Record["📝 Record metrics"]
-    Record --> Broadcast["📡 Broadcast results"]
-
+flowchart LR
+    Start["🚀 Start Session"] --> Evaluate["🔍 Evaluate Target<br/>Probe + analyze + assess + identify"]
+    Evaluate --> Select["🎰 Select Tool<br/>Use findings + weight next action"]
+    Select --> Execute["⚡ Execute Tool<br/>CPU/memory spike, cluster, MTD rotation"]
+    Execute --> Record["📝 Record Metrics<br/>Capture outcomes + telemetry"]
+    Record --> Broadcast["📡 Broadcast Results"]
     Broadcast --> Wait["⏳ Wait Interval"]
-    Wait --> Check["❓ Check Stop Signal"]
-
-    Check -->|Max iterations reached?| Decision{"Continue?"}
+    Wait --> Decision{"Continue?"}
     Decision -->|Yes| Evaluate
     Decision -->|No| Complete["✅ Session Complete<br/>📊 Generate Report"]

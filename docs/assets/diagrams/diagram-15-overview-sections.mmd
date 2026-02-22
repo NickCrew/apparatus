@@ -1,0 +1,11 @@
+flowchart LR
+    Overview["Overview Dashboard\nSingle-pane operational view"] --> Pressure["Pressure Gauge\nSystem stability + core health"]
+    Pressure --> Metrics["Key Metrics\nThroughput, error rate, latency"]
+    Metrics --> Protocols["Protocol Activity\nLive traffic by interface"]
+    Protocols --> Incidents["Incident Feed\nPrioritized real-time alerts"]
+
+    style Overview fill:#1f365a
+    style Pressure fill:#1f4a45
+    style Metrics fill:#2b4265
+    style Protocols fill:#4a2f56
+    style Incidents fill:#5f4a1d

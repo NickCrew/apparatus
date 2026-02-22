@@ -1,0 +1,11 @@
+flowchart LR
+    Controls["Search + Filters\nRisk, Category, Protocol"] --> List["Attacker List\nIP + Risk + Status"]
+    List --> Profile["Attacker Profile\nIdentity + Risk + Timeline"]
+    Profile --> Heatmap["Protocol Heatmap\nHTTP / HTTPS / TCP / DNS"]
+    Profile --> Actions["Response Actions\nTarpit / Blackhole / Release / Details"]
+
+    style Controls fill:#1f365a
+    style List fill:#2b4265
+    style Profile fill:#1f4a45
+    style Heatmap fill:#4a2f56
+    style Actions fill:#5f4a1d

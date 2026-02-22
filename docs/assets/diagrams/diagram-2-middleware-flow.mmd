@@ -1,15 +1,11 @@
-flowchart TD
+flowchart LR
     Request["📥 Incoming Request"]
 
-    Request -->|1. MTD Check| MTD["✓ Verify polymorphic prefix"]
-    MTD -->|2. Self-Healing| SelfHeal["📊 Measure event loop lag"]
-    SelfHeal -->|3. Deception| Deception["🪤 Check honeypot paths<br/>/.env, /admin, /console"]
-    Deception -->|4. Tarpit| Tarpit["🌊 Trap suspicious requests"]
-    Tarpit -->|5. Metrics Start| Metrics["⏱️ Begin latency measurement"]
-    Metrics -->|6. Body Parsing| BodyParse["📄 Parse JSON/form/raw"]
-    BodyParse -->|7. Active Shield| Shield["🛡️ Apply blocking rules"]
+    Request -->|1. MTD| MTD["✓ Verify polymorphic prefix"]
+    MTD -->|2-4. Guard Rails| GuardRails["📊 Self-healing + deception + tarpit"]
+    GuardRails -->|5-6. Parsing| ParseStage["⏱️ Start metrics + parse JSON/form/raw"]
+    ParseStage -->|7. Active Shield| Shield["🛡️ Apply blocking rules"]
     Shield -->|8. Route Handler| Handler["🔨 Execute endpoint logic"]
-    Handler -->|9. Response| Response["📤 Generate response"]
-    Response -->|10. Metrics End| MetricsEnd["📊 Record latency & status"]
-    MetricsEnd -->|11. SSE Broadcast| SSE["📡 Push to dashboard clients"]
+    Handler -->|9-10. Response| Response["📤 Generate response + record latency/status"]
+    Response -->|11. SSE Broadcast| SSE["📡 Push updates to dashboard clients"]
     SSE -->|📨 Response| Client["👤 Client"]

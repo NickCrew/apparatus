@@ -1,0 +1,11 @@
+flowchart LR
+    Identity["Attacker Identity\nIP, category, first/last seen"] --> Risk["Risk Summary\nScore, total requests, block rate"]
+    Risk --> Protocols["Protocol Distribution\nHTTP-heavy vs cross-protocol"]
+    Protocols --> AttackTypes["Attack Type Breakdown\nXSS, SQLi, traversal, command injection"]
+    AttackTypes --> Response["Response History\nTarpit time, blocked count, last action"]
+
+    style Identity fill:#2b4265
+    style Risk fill:#5a2f45
+    style Protocols fill:#1f365a
+    style AttackTypes fill:#4a2f56
+    style Response fill:#5f4a1d

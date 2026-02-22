@@ -1,0 +1,11 @@
+flowchart LR
+    Header["Header\nConsole title + status"] --> Controls["Controls\nPrimary actions"]
+    Controls --> Filters["Filters\nStatus/date/search"]
+    Filters --> DataArea["Data Area\nReal-time events, requests, logs"]
+    DataArea --> Export["Export\nJSON / CSV"]
+
+    style Header fill:#1f365a
+    style Controls fill:#1f4a45
+    style Filters fill:#2b4265
+    style DataArea fill:#4a2f56
+    style Export fill:#5f4a1d
