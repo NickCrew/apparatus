@@ -17,6 +17,7 @@ import {
   graphToScenarioPayload,
   isScenarioAction,
   scenarioPayloadToGraph,
+  validateScenarioGraph,
 } from '../scenarios/scenarioBuilder';
 
 const DEFAULT_SCENARIO: ScenarioBuilderPayload = {
@@ -70,12 +71,14 @@ export function ScenarioConsole() {
   const hasUnsavedChanges = currentSnapshot !== baselineSnapshot;
   const jsonPreview = useMemo(() => JSON.stringify(payload, null, 2), [payload]);
 
+  const flowValidationErrors = useMemo(() => validateScenarioGraph(nodes, edges), [edges, nodes]);
   const validationErrors = useMemo(() => {
     const issues: string[] = [];
     if (!scenarioName.trim()) issues.push('Scenario name is required.');
     if (nodes.length === 0) issues.push('Add at least one tool block to the canvas.');
+    issues.push(...flowValidationErrors);
     return issues;
-  }, [nodes, scenarioName]);
+  }, [flowValidationErrors, nodes, scenarioName]);
 
   const confirmDiscardChanges = useCallback(() => {
     if (!hasUnsavedChanges) return true;
@@ -125,7 +128,7 @@ export function ScenarioConsole() {
     });
   }, [applyBuilderState, confirmDiscardChanges]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setError(null);
     setSuccess(null);
     if (validationErrors.length > 0) {
@@ -144,7 +147,7 @@ export function ScenarioConsole() {
       console.error(saveError);
       setError('Failed to save scenario.');
     }
-  };
+  }, [edges, payload, saveScenario, scenarioDescription, scenarioName, validationErrors]);
 
   const handleRun = useCallback(async (id: string) => {
     setError(null);
@@ -278,6 +281,7 @@ export function ScenarioConsole() {
           onDrop={handleCanvasDrop}
           onDragOver={handleCanvasDragOver}
           onInit={setReactFlowInstance}
+          hasValidationErrors={flowValidationErrors.length > 0}
         />
         <ScenarioBuilderConfigPanel
           scenarioName={scenarioName}

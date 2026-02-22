@@ -6,6 +6,7 @@ import {
   type ScenarioAction,
   type ScenarioBuilderNode,
   type ScenarioBuilderPayload,
+  validateScenarioGraph,
 } from '../src/dashboard/components/scenarios/scenarioBuilder.js';
 
 function makeNode(args: { id: string; x: number; y: number; action?: ScenarioAction }): ScenarioBuilderNode {
@@ -93,5 +94,107 @@ describe('scenarioBuilder graph mapping', () => {
     const graph = scenarioPayloadToGraph(payload);
     expect(graph.nodes.map((node) => node.id)).toEqual(['s1', 's2', 's3']);
     expect(graph.edges.map((edge) => `${edge.source}->${edge.target}`)).toEqual(['s1->s2', 's2->s3']);
+  });
+
+  it('validates and rejects branching graph layouts', () => {
+    const nodes: ScenarioBuilderNode[] = [
+      makeNode({ id: 'root', x: 10, y: 10 }),
+      makeNode({ id: 'left', x: 120, y: 10 }),
+      makeNode({ id: 'right', x: 120, y: 90 }),
+    ];
+    const edges: Edge[] = [
+      { id: 'e-root-left', source: 'root', target: 'left' },
+      { id: 'e-root-right', source: 'root', target: 'right' },
+    ];
+
+    const errors = validateScenarioGraph(nodes, edges);
+    expect(errors).toContain('Sequential mode allows only one outgoing edge per step.');
+  });
+
+  it('validates and rejects disconnected graphs', () => {
+    const nodes: ScenarioBuilderNode[] = [
+      makeNode({ id: 'a', x: 10, y: 10 }),
+      makeNode({ id: 'b', x: 120, y: 10 }),
+      makeNode({ id: 'orphan', x: 240, y: 10 }),
+    ];
+    const edges: Edge[] = [{ id: 'e-a-b', source: 'a', target: 'b' }];
+
+    const errors = validateScenarioGraph(nodes, edges);
+    expect(errors).toContain('Graph must have exactly one starting step.');
+    expect(errors).toContain('Graph must connect all steps in a single execution chain.');
+  });
+
+  it('validates and rejects execution cycles', () => {
+    const nodes: ScenarioBuilderNode[] = [
+      makeNode({ id: 'a', x: 10, y: 10 }),
+      makeNode({ id: 'b', x: 120, y: 10 }),
+      makeNode({ id: 'c', x: 240, y: 10 }),
+    ];
+    const edges: Edge[] = [
+      { id: 'e-a-b', source: 'a', target: 'b' },
+      { id: 'e-b-c', source: 'b', target: 'c' },
+      { id: 'e-c-a', source: 'c', target: 'a' },
+    ];
+
+    const errors = validateScenarioGraph(nodes, edges);
+    expect(errors).toContain('Graph must have exactly one starting step.');
+    expect(errors).toContain('Graph cannot contain execution cycles.');
+  });
+
+  it('accepts a valid linear execution chain', () => {
+    const nodes: ScenarioBuilderNode[] = [
+      makeNode({ id: 'a', x: 10, y: 10 }),
+      makeNode({ id: 'b', x: 120, y: 10 }),
+      makeNode({ id: 'c', x: 240, y: 10 }),
+    ];
+    const edges: Edge[] = [
+      { id: 'e-a-b', source: 'a', target: 'b' },
+      { id: 'e-b-c', source: 'b', target: 'c' },
+    ];
+
+    const errors = validateScenarioGraph(nodes, edges);
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects edges referencing missing nodes', () => {
+    const nodes: ScenarioBuilderNode[] = [makeNode({ id: 'a', x: 10, y: 10 })];
+    const edges: Edge[] = [{ id: 'e-invalid', source: 'a', target: 'ghost' }];
+
+    const errors = validateScenarioGraph(nodes, edges);
+    expect(errors).toContain('Graph contains invalid edge references.');
+  });
+
+  it('rejects convergent fan-in edges', () => {
+    const nodes: ScenarioBuilderNode[] = [
+      makeNode({ id: 'a', x: 10, y: 10 }),
+      makeNode({ id: 'b', x: 120, y: 10 }),
+      makeNode({ id: 'c', x: 240, y: 10 }),
+    ];
+    const edges: Edge[] = [
+      { id: 'e-a-c', source: 'a', target: 'c' },
+      { id: 'e-b-c', source: 'b', target: 'c' },
+    ];
+
+    const errors = validateScenarioGraph(nodes, edges);
+    expect(errors).toContain('Sequential mode allows only one incoming edge per step.');
+  });
+
+  it('accepts a single-node graph with no edges', () => {
+    const nodes: ScenarioBuilderNode[] = [makeNode({ id: 'solo', x: 10, y: 10 })];
+    const errors = validateScenarioGraph(nodes, []);
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects self-loop edges', () => {
+    const nodes: ScenarioBuilderNode[] = [makeNode({ id: 'a', x: 10, y: 10 })];
+    const edges: Edge[] = [{ id: 'e-self', source: 'a', target: 'a' }];
+
+    const errors = validateScenarioGraph(nodes, edges);
+    expect(errors).toContain('Graph cannot contain execution cycles.');
+  });
+
+  it('accepts empty graph input (handled by higher-level required-node validation)', () => {
+    const errors = validateScenarioGraph([], []);
+    expect(errors).toEqual([]);
   });
 });

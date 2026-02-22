@@ -102,6 +102,85 @@ export function createScenarioSnapshot(payload: ScenarioBuilderPayload, edges: A
   });
 }
 
+export function validateScenarioGraph(nodes: ScenarioBuilderNode[], edges: Edge[]): string[] {
+  if (nodes.length === 0) return [];
+
+  const errors = new Set<string>();
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  const incoming = new Map<string, number>(nodes.map((node) => [node.id, 0]));
+  const outgoing = new Map<string, string[]>(nodes.map((node) => [node.id, []]));
+  let validEdgesCount = 0;
+
+  for (const edge of edges) {
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+      errors.add('Graph contains invalid edge references.');
+      continue;
+    }
+    validEdgesCount += 1;
+    incoming.set(edge.target, (incoming.get(edge.target) ?? 0) + 1);
+    const targets = outgoing.get(edge.source) ?? [];
+    targets.push(edge.target);
+    outgoing.set(edge.source, targets);
+  }
+
+  const incomingOverLimit = Array.from(incoming.values()).some((count) => count > 1);
+  if (incomingOverLimit) {
+    errors.add('Sequential mode allows only one incoming edge per step.');
+  }
+
+  const outgoingOverLimit = Array.from(outgoing.values()).some((targets) => targets.length > 1);
+  if (outgoingOverLimit) {
+    errors.add('Sequential mode allows only one outgoing edge per step.');
+  }
+
+  const startNodes = nodes.filter((node) => (incoming.get(node.id) ?? 0) === 0);
+  if (startNodes.length !== 1) {
+    errors.add('Graph must have exactly one starting step.');
+  }
+
+  if (validEdgesCount !== nodes.length - 1) {
+    errors.add('Graph must connect all steps in a single execution chain.');
+  }
+
+  const traversed = new Set<string>();
+  const inStack = new Set<string>();
+  const visitForCycle = (nodeId: string): boolean => {
+    if (inStack.has(nodeId)) return true;
+    if (traversed.has(nodeId)) return false;
+    traversed.add(nodeId);
+    inStack.add(nodeId);
+    const nextTargets: string[] = outgoing.get(nodeId) ?? [];
+    for (const nextTargetId of nextTargets) {
+      if (visitForCycle(nextTargetId)) return true;
+    }
+    inStack.delete(nodeId);
+    return false;
+  };
+  const hasCycle = nodes.some((node) => visitForCycle(node.id));
+  if (hasCycle) {
+    errors.add('Graph cannot contain execution cycles.');
+  }
+
+  // Traversal assumes a single entrypoint chain. Multiple/no starts already emit validation errors above.
+  if (startNodes.length === 1) {
+    const visited = new Set<string>();
+    let cursorId: string | undefined = startNodes[0].id;
+
+    while (cursorId) {
+      if (visited.has(cursorId)) break;
+      visited.add(cursorId);
+      const nextTargets: string[] = outgoing.get(cursorId) ?? [];
+      cursorId = nextTargets[0];
+    }
+
+    if (visited.size !== nodes.length) {
+      errors.add('Graph contains disconnected steps.');
+    }
+  }
+
+  return Array.from(errors);
+}
+
 const NODE_BASE_STYLE = {
   borderRadius: 8,
   borderWidth: 1,

@@ -12,6 +12,7 @@ import {
   type ReactFlowInstance,
 } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { cn } from '../ui/cn';
 import type { ScenarioBuilderNodeData } from './scenarioBuilder';
 import 'reactflow/dist/style.css';
 
@@ -26,6 +27,7 @@ interface ScenarioBuilderCanvasProps {
   onDrop: (event: DragEvent<HTMLDivElement>) => void;
   onDragOver: (event: DragEvent<HTMLDivElement>) => void;
   onInit: (instance: ReactFlowInstance<ScenarioBuilderNodeData>) => void;
+  hasValidationErrors: boolean;
 }
 
 export function ScenarioBuilderCanvas({
@@ -37,6 +39,7 @@ export function ScenarioBuilderCanvas({
   onDrop,
   onDragOver,
   onInit,
+  hasValidationErrors,
 }: ScenarioBuilderCanvasProps) {
   return (
     <Card variant="glass" glow="primary" className="xl:col-span-6 flex flex-col min-h-0">
@@ -48,7 +51,12 @@ export function ScenarioBuilderCanvas({
           role="region"
           aria-label="Scenario flow canvas"
           aria-roledescription="Drag-and-drop scenario builder canvas"
-          className="w-full h-full min-h-[420px] bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.15),_rgba(2,6,23,0.95)_52%)]"
+          aria-invalid={hasValidationErrors}
+          aria-errormessage={hasValidationErrors ? 'scenario-canvas-validation-error' : undefined}
+          className={cn(
+            'w-full h-full min-h-[420px] bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.15),_rgba(2,6,23,0.95)_52%)]',
+            hasValidationErrors ? 'ring-2 ring-danger-500/60 ring-inset' : ''
+          )}
         >
           <ReactFlow
             nodes={nodes}
@@ -74,6 +82,15 @@ export function ScenarioBuilderCanvas({
         <div className="px-3 py-2 text-[11px] text-neutral-500 font-mono border-t border-neutral-800/60">
           Tip: select a node or edge and press <span className="text-neutral-300">Delete</span> to remove it.
         </div>
+        {hasValidationErrors && (
+          <div
+            id="scenario-canvas-validation-error"
+            role="alert"
+            className="px-3 py-2 text-[11px] text-danger-400 font-mono border-t border-danger-900/40"
+          >
+            Invalid execution flow detected. Resolve validation errors before saving.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
