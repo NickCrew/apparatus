@@ -9,8 +9,8 @@ export function ChaosConsole() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-100 font-mono uppercase">Chaos Laboratory</h1>
-        <p className="text-neutral-400 text-sm mt-1">Inject faults to test system resilience.</p>
+        <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Chaos Laboratory</h1>
+        <p className="text-neutral-400 text-sm mt-1 ml-2">Inject faults to test system resilience.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

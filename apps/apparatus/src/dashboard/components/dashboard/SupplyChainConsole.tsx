@@ -21,8 +21,8 @@ export function SupplyChainConsole() {
     <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono uppercase">Supply Chain Radar</h1>
-          <p className="text-neutral-400 text-sm mt-1">Software Bill of Materials (SBOM) Infection Simulator.</p>
+          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Supply Chain Radar</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2">Software Bill of Materials (SBOM) Infection Simulator.</p>
         </div>
         <div className="flex gap-4">
             <div className="flex flex-col items-end">

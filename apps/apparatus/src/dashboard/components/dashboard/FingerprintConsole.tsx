@@ -127,8 +127,8 @@ export function FingerprintConsole() {
     <div className="space-y-5 animate-in fade-in duration-500">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-mono uppercase text-neutral-100">Attacker Fingerprinting</h1>
-          <p className="text-sm text-neutral-400 mt-1">
+          <h1 className="text-2xl font-bold font-mono text-neutral-100 ml-2">Attacker Fingerprinting</h1>
+          <p className="text-sm text-neutral-400 mt-1 ml-2">
             Persistent attacker identities, risk scoring, protocol heatmap, and one-click containment.
           </p>
         </div>

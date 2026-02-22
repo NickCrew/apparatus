@@ -254,11 +254,11 @@ export function IdentityConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono uppercase flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-neutral-100 font-mono flex items-center gap-2 ml-2">
             <Fingerprint className="h-6 w-6 text-primary-400" />
             Identity Token Forge
           </h1>
-          <p className="text-neutral-400 text-sm mt-1">Decode, mutate, and test JWTs against secure and intentionally vulnerable verification paths.</p>
+          <p className="text-neutral-400 text-sm mt-1 ml-2">Decode, mutate, and test JWTs against secure and intentionally vulnerable verification paths.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => loadTokenIntoEditors(rawToken)} disabled={!rawToken.trim() || isLoading}>

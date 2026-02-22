@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, ShieldAlert, Square, Play, Pause, XCircle, Gauge, Activity } from 'lucide-react';
+import { Bot, ShieldAlert, Square, Play, Pause, XCircle, Gauge, Activity, Database, Link2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { cn } from '../ui/cn';
 import { useAutopilot } from '../../hooks/useAutopilot';
+import {
+  compactAssetLabel,
+  deriveAutopilotMemoryPanelModel,
+  formatSeenAt,
+} from './AutopilotConsole.logic';
 
 const TOOL_OPTIONS = [
   { id: 'cluster.attack', label: 'Cluster Attack' },
@@ -54,6 +59,12 @@ export function AutopilotConsole() {
 
   const thoughts = session?.thoughts || [];
   const actions = session?.actions || [];
+  const sessionContext = session?.sessionContext;
+
+  const { acquiredAssets, relationStrip, breakSignals, openedPaths, preconditions } = useMemo(
+    () => deriveAutopilotMemoryPanelModel(sessionContext),
+    [sessionContext]
+  );
 
   useEffect(() => {
     if (!thoughtAutoScroll) return;
@@ -101,11 +112,11 @@ export function AutopilotConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-neutral-100 font-mono flex items-center gap-2 ml-2">
             <Bot className="h-6 w-6 text-primary-400" />
             Autopilot Console
           </h1>
-          <p className="text-neutral-400 text-sm mt-1">Autonomous red-team loop: analyze, decide, act, verify, report.</p>
+          <p className="text-neutral-400 text-sm mt-1 ml-2">Autonomous red-team loop: analyze, decide, act, verify, report.</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -367,6 +378,100 @@ export function AutopilotConsole() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Card variant="panel" glow="primary" className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-primary-400" />
+              Acquired Assets
+            </CardTitle>
+            <CardDescription>Session memory of discovered assets with source attribution and recency.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[240px] overflow-y-auto space-y-2 pr-1">
+              {acquiredAssets.length === 0 && (
+                <div className="text-xs text-neutral-600 font-mono">No assets captured yet.</div>
+              )}
+
+              {acquiredAssets.map((asset) => (
+                <div key={asset.id} className="p-2 rounded-[3px] border border-neutral-800/70 bg-neutral-900/40">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge size="sm" variant="neutral">{asset.type}</Badge>
+                      <div className="text-xs font-mono text-neutral-100 truncate" title={asset.value}>
+                        {asset.value}
+                      </div>
+                    </div>
+                    <Badge size="sm" variant="primary">{Math.round(asset.confidence * 100)}%</Badge>
+                  </div>
+                  <div className="mt-1 text-[11px] text-neutral-500 font-mono">
+                    src {asset.source} | seen {formatSeenAt(asset.lastSeenAt)} | x{asset.occurrences}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card variant="panel" glow="primary">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link2 className="h-4 w-4 text-primary-400" />
+              Relation Strip
+            </CardTitle>
+            <CardDescription>Compact objective progress and memory relationship map.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="text-[11px] text-neutral-500 font-mono">Break Signals</div>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {breakSignals.length === 0 ? (
+                  <span className="text-[11px] text-neutral-600 font-mono">none</span>
+                ) : (
+                  breakSignals.slice(-4).map((signal) => (
+                    <Badge key={signal} size="sm" variant="danger">{signal}</Badge>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[11px] text-neutral-500 font-mono">Opened Paths</div>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {openedPaths.length === 0 ? (
+                  <span className="text-[11px] text-neutral-600 font-mono">none</span>
+                ) : (
+                  openedPaths.slice(-4).map((pathValue) => (
+                    <Badge key={pathValue} size="sm" variant="primary">{pathValue}</Badge>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[11px] text-neutral-500 font-mono">Relation Links</div>
+              <div className="mt-1 h-[150px] overflow-y-auto space-y-1 rounded-[3px] border border-neutral-800/60 bg-black/25 p-2">
+                {relationStrip.length === 0 && (
+                  <div className="text-[11px] text-neutral-600 font-mono">No relations captured yet.</div>
+                )}
+
+                {relationStrip.map((relation) => (
+                  <div key={relation.id} className="text-[11px] font-mono text-neutral-300">
+                    <span className="text-primary-300">{compactAssetLabel(relation.fromAssetId)}</span>{' '}
+                    <span className="text-neutral-500">[{relation.type}]</span>{' '}
+                    <span className="text-primary-300">{compactAssetLabel(relation.toAssetId)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-[11px] text-neutral-500 font-mono">
+              Preconditions: {preconditions.length > 0 ? preconditions.slice(-2).join(', ') : 'none'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

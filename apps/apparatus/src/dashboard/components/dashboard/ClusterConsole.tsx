@@ -62,8 +62,8 @@ export function ClusterConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono uppercase">Cluster Operations</h1>
-          <p className="text-neutral-400 text-sm mt-1">Distributed command & control network.</p>
+          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Cluster Operations</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2">Distributed command & control network.</p>
         </div>
         <div className="flex items-center gap-3">
             <div className="flex flex-col items-end">

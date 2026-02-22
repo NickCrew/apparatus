@@ -251,10 +251,10 @@ export function IncidentTimeline() {
     <div className="space-y-5 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-mono uppercase text-neutral-100">
+          <h1 className="text-2xl font-bold font-mono text-neutral-100 ml-2">
             Incident Timeline
           </h1>
-          <p className="text-sm text-neutral-400 mt-1">
+          <p className="text-sm text-neutral-400 mt-1 ml-2">
             Unified flight recorder for traffic, defense, deception, webhook, and health events.
           </p>
         </div>
