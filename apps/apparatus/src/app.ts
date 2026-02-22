@@ -29,7 +29,8 @@ import { kvHandler } from "./kv.js";
 import { scriptHandler } from "./scripting.js";
 import { pcapHandler, harReplayHandler, livePacketHandler } from "./forensics.js";
 import { clusterAttackHandler, clusterAttackStopHandler, getClusterMembers } from "./cluster.js";
-import { tarpitMiddleware, tarpitListHandler, tarpitReleaseHandler } from "./tarpit.js";
+import { tarpitMiddleware, tarpitListHandler, tarpitReleaseHandler, tarpitTrapHandler } from "./tarpit.js";
+import { blackholeAddHandler, blackholeListHandler, blackholeMiddleware, blackholeReleaseHandler } from "./blackhole.js";
 import { selfHealingMiddleware, getHealthStatus } from "./self-healing.js";
 import { deceptionHandler, deceptionHistoryHandler, deceptionClearHandler } from "./deception.js";
 import { redTeamValidateHandler } from "./redteam.js";
@@ -152,6 +153,11 @@ export function createApp(): Express {
             }
         });
     });
+
+    // 0.3 Global Mitigation (Blackhole)
+    // Hard-drop layer intentionally placed before adaptive defenses so blocked
+    // actors cannot consume additional resources deeper in the stack.
+    app.use(blackholeMiddleware);
 
     // 1. Moving Target Defense (Hide everything if active)
     app.use(polymorphicRouteMiddleware);
@@ -411,8 +417,12 @@ export function createApp(): Express {
     app.all("/mtd", mtdHandler);
 
     // Tarpit Monitor API
-    app.get("/tarpit", tarpitListHandler);
-    app.post("/tarpit/release", tarpitReleaseHandler);
+    app.get("/blackhole", securityGate, blackholeListHandler);
+    app.post("/blackhole", securityGate, blackholeAddHandler);
+    app.post("/blackhole/release", securityGate, blackholeReleaseHandler);
+    app.get("/tarpit", securityGate, tarpitListHandler);
+    app.post("/tarpit/trap", securityGate, tarpitTrapHandler);
+    app.post("/tarpit/release", securityGate, tarpitReleaseHandler);
 
     // Deception History API
     app.get("/deception/history", deceptionHistoryHandler);

@@ -20,7 +20,7 @@ import { logger } from "../logger.js";
 
 const ALL_TOOLS: ToolAction[] = ["cluster.attack", "chaos.cpu", "chaos.memory", "mtd.rotate", "delay", "chaos.crash"];
 const DEFAULT_ALLOWED_TOOLS: ToolAction[] = ["cluster.attack", "chaos.cpu", "chaos.memory", "mtd.rotate", "delay"];
-const BLOCKED_ATTACK_PREFIXES = ["/api/redteam", "/api/simulator", "/cluster", "/chaos", "/scenarios", "/proxy", "/tarpit", "/deception"];
+const BLOCKED_ATTACK_PREFIXES = ["/api/redteam", "/api/simulator", "/api/attackers", "/cluster", "/chaos", "/scenarios", "/proxy", "/tarpit", "/blackhole", "/deception"];
 
 interface Decision {
     thought: string;

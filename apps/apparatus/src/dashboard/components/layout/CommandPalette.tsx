@@ -13,7 +13,8 @@ import {
   Sun,
   Webhook,
   Server,
-  BookOpen
+  BookOpen,
+  ShieldAlert
 } from "lucide-react"
 
 import {
@@ -100,6 +101,10 @@ export function CommandPalette() {
           <CommandItem onSelect={() => runCommand(() => navigate('/traffic'))}>
             <Activity className="mr-2 h-4 w-4" />
             <span>Traffic Console</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => navigate('/fingerprints'))}>
+            <ShieldAlert className="mr-2 h-4 w-4" />
+            <span>Attacker Fingerprints</span>
           </CommandItem>
           <CommandItem onSelect={() => runCommand(() => navigate('/defense'))}>
             <Shield className="mr-2 h-4 w-4" />

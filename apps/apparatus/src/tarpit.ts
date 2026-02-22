@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "./logger.js";
 import { broadcastTarpit } from "./sse-broadcast.js";
+import { isValidIpLiteral, normalizeIp } from "./utils/ip.js";
 
 const TRAP_PATHS = ["/wp-admin", "/.env", "/.git", "/admin.php"];
 export const blockedIps = new Set<string>();
@@ -23,14 +24,14 @@ export function tarpitListHandler(_req: Request, res: Response) {
 }
 
 export function tarpitReleaseHandler(req: Request, res: Response) {
-    const { ip } = req.body;
-    if (ip && blockedIps.has(ip)) {
+    const ip = normalizeIp(req.body?.ip);
+    if (ip && ip !== "unknown" && blockedIps.has(ip)) {
         blockedIps.delete(ip);
         trapTimes.delete(ip);
         logger.info({ ip }, "Tarpit: IP released");
         broadcastTarpit('released', ip);
         res.json({ status: "released", ip });
-    } else if (ip) {
+    } else if (ip && ip !== "unknown") {
         res.status(404).json({ error: "IP not in tarpit" });
     } else {
         // Clear all - broadcast for each
@@ -44,8 +45,24 @@ export function tarpitReleaseHandler(req: Request, res: Response) {
     }
 }
 
+export function tarpitTrapHandler(req: Request, res: Response) {
+    const ip = normalizeIp(req.body?.ip);
+    if (!ip || ip === "unknown" || !isValidIpLiteral(ip)) {
+        return res.status(400).json({ error: "Invalid ip" });
+    }
+
+    if (!blockedIps.has(ip)) {
+        blockedIps.add(ip);
+        trapTimes.set(ip, Date.now());
+        logger.warn({ ip }, "Tarpit: IP trapped via control API");
+        broadcastTarpit("trapped", ip);
+    }
+
+    return res.json({ status: "trapped", ip, count: blockedIps.size });
+}
+
 export function tarpitMiddleware(req: Request, res: Response, next: NextFunction) {
-    const ip = req.ip || "unknown";
+    const ip = normalizeIp(req.ip || req.socket.remoteAddress);
 
     // If IP is already flagged, Tarpit them
     if (blockedIps.has(ip)) {
@@ -54,6 +71,11 @@ export function tarpitMiddleware(req: Request, res: Response, next: NextFunction
 
     // Check if they hit a Trap Route
     if (TRAP_PATHS.some(path => req.path.startsWith(path))) {
+        if (!ip || ip === "unknown") {
+            logger.warn({ path: req.path }, "Honeypot Triggered with unknown IP; entering one-shot tarpit.");
+            return enterTarpit(res);
+        }
+
         logger.warn({ ip, path: req.path }, "Honeypot Triggered! Activating Tarpit.");
         blockedIps.add(ip);
         trapTimes.set(ip, Date.now());
