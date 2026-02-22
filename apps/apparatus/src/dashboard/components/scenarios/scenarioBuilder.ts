@@ -26,7 +26,7 @@ export interface ScenarioBuilderNodeData {
 export type ScenarioBuilderNode = Node<ScenarioBuilderNodeData>;
 
 const NODE_FALLBACK_START = { x: 120, y: 100 };
-const NODE_FALLBACK_OFFSET = { x: 26, y: 18 };
+const NODE_FALLBACK_OFFSET = { x: 40, y: 28 };
 
 interface ActionBlueprint {
   action: ScenarioAction;
@@ -358,16 +358,19 @@ export function validateScenarioNodeParams(nodes: ScenarioBuilderNode[]): string
 }
 
 const NODE_BASE_STYLE = {
-  borderRadius: 8,
+  borderRadius: 10,
   borderWidth: 1,
   borderStyle: 'solid',
   borderColor: 'rgba(148, 163, 184, 0.4)',
   backgroundColor: 'rgba(15, 23, 42, 0.9)',
   color: 'rgba(226, 232, 240, 1)',
-  padding: '8px 10px',
+  padding: '12px 14px',
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-  fontSize: '11px',
-  minWidth: 170,
+  fontSize: '13px',
+  fontWeight: 600,
+  lineHeight: 1.4,
+  minWidth: 240,
+  minHeight: 72,
   boxShadow: '0 0 0 1px rgba(14, 116, 144, 0.1), 0 10px 20px -15px rgba(14, 116, 144, 0.6)',
 } as const;
 
@@ -473,8 +476,8 @@ export function scenarioPayloadToGraph(payload: ScenarioBuilderPayload): {
     id: step.id,
     type: 'default',
     position: {
-      x: 90 + index * 220,
-      y: 120 + (index % 2) * 100,
+      x: 110 + index * 280,
+      y: 130 + (index % 2) * 120,
     },
     data: {
       action: step.action,
