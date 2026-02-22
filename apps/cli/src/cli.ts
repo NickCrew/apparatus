@@ -25,6 +25,9 @@ import { registerLabsCommands } from './commands/labs.js';
 import { registerGraphQLCommands } from './commands/graphql.js';
 import { registerWebhooksCommands } from './commands/webhooks.js';
 import { registerVictimCommands } from './commands/victim.js';
+import { registerScenariosCommands } from './commands/scenarios.js';
+import { registerDrillsCommands } from './commands/drills.js';
+import { registerAutopilotCommands } from './commands/autopilot.js';
 
 export interface GlobalOptions {
   url?: string;
@@ -115,6 +118,9 @@ Environment Variables:
   registerGraphQLCommands(program, getClient);
   registerWebhooksCommands(program, getClient);
   registerVictimCommands(program, getClient);
+  registerScenariosCommands(program, getClient);
+  registerDrillsCommands(program, getClient);
+  registerAutopilotCommands(program, getClient);
 
   // Config command
   program
