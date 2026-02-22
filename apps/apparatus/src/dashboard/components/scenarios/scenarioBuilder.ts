@@ -25,6 +25,9 @@ export interface ScenarioBuilderNodeData {
 
 export type ScenarioBuilderNode = Node<ScenarioBuilderNodeData>;
 
+const NODE_FALLBACK_START = { x: 120, y: 100 };
+const NODE_FALLBACK_OFFSET = { x: 26, y: 18 };
+
 interface ActionBlueprint {
   action: ScenarioAction;
   label: string;
@@ -76,6 +79,27 @@ export const SCENARIO_ACTION_BLUEPRINTS: ActionBlueprint[] = [
 
 export function isScenarioAction(value: string): value is ScenarioAction {
   return SCENARIO_ACTION_BLUEPRINTS.some((blueprint) => blueprint.action === value);
+}
+
+export function getNextNodeFallbackPosition(nodeCount: number): XYPosition {
+  return {
+    x: NODE_FALLBACK_START.x + nodeCount * NODE_FALLBACK_OFFSET.x,
+    y: NODE_FALLBACK_START.y + nodeCount * NODE_FALLBACK_OFFSET.y,
+  };
+}
+
+export function getEdgeSignature(edges: Array<Pick<Edge, 'source' | 'target'>>): string {
+  return edges
+    .map((edge) => `${edge.source}->${edge.target}`)
+    .sort()
+    .join('|');
+}
+
+export function createScenarioSnapshot(payload: ScenarioBuilderPayload, edges: Array<Pick<Edge, 'source' | 'target'>>): string {
+  return JSON.stringify({
+    payload,
+    edgeSignature: getEdgeSignature(edges),
+  });
 }
 
 const NODE_BASE_STYLE = {
