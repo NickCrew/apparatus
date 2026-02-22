@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { Edge } from 'reactflow';
 import {
+  createNodeDataForAction,
   graphToScenarioPayload,
+  normalizeNodeParams,
   scenarioPayloadToGraph,
   type ScenarioAction,
   type ScenarioBuilderNode,
   type ScenarioBuilderPayload,
+  validateNodeParameters,
   validateScenarioGraph,
+  validateScenarioNodeParams,
 } from '../src/dashboard/components/scenarios/scenarioBuilder.js';
 
 function makeNode(args: { id: string; x: number; y: number; action?: ScenarioAction }): ScenarioBuilderNode {
@@ -196,5 +200,129 @@ describe('scenarioBuilder graph mapping', () => {
   it('accepts empty graph input (handled by higher-level required-node validation)', () => {
     const errors = validateScenarioGraph([], []);
     expect(errors).toEqual([]);
+  });
+
+  it('provides action defaults for node data creation', () => {
+    const memoryNodeData = createNodeDataForAction('chaos.memory');
+    expect(memoryNodeData.params).toEqual({ action: 'allocate', amount: 100 });
+    expect(memoryNodeData.delayMs).toBe(1000);
+  });
+
+  it('validates cluster attack node parameters', () => {
+    const errors = validateNodeParameters(
+      'cluster.attack',
+      { target: 'ftp://example.com', rate: 0 },
+      -3
+    );
+    expect(errors).toContain('Cluster target must be a valid http/https URL.');
+    expect(errors).toContain('Cluster rate must be an integer between 1 and 2000.');
+    expect(errors).toContain('Post-step delay must be an integer between 0 and 120000 ms.');
+  });
+
+  it('accepts valid chaos.cpu parameters', () => {
+    const errors = validateNodeParameters('chaos.cpu', { duration: 5000 });
+    expect(errors).toEqual([]);
+  });
+
+  it('accepts chaos.cpu duration at configured boundaries', () => {
+    expect(validateNodeParameters('chaos.cpu', { duration: 250 })).toEqual([]);
+    expect(validateNodeParameters('chaos.cpu', { duration: 120000 })).toEqual([]);
+  });
+
+  it('accepts valid cluster.attack and delay parameters', () => {
+    const clusterValid = validateNodeParameters('cluster.attack', { target: 'https://example.com', rate: 200 });
+    expect(clusterValid).toEqual([]);
+
+    const delayValid = validateNodeParameters('delay', { duration: 5000 });
+    expect(delayValid).toEqual([]);
+  });
+
+  it('rejects delay duration values below the minimum bound', () => {
+    const errors = validateNodeParameters('delay', { duration: 5 });
+    expect(errors).toContain('Delay duration must be an integer between 10 and 120000 ms.');
+  });
+
+  it('validates chaos.memory allocate mode amount bounds and allows clear mode', () => {
+    const invalidAllocate = validateNodeParameters('chaos.memory', { action: 'allocate', amount: 0 });
+    expect(invalidAllocate).toContain('Memory amount must be an integer between 1 and 4096 MB.');
+
+    const clearMode = validateNodeParameters('chaos.memory', { action: 'clear' });
+    expect(clearMode).toEqual([]);
+  });
+
+  it('accepts empty mtd.rotate prefix as an unset value', () => {
+    const noPrefixErrors = validateNodeParameters('mtd.rotate', { prefix: '' });
+    expect(noPrefixErrors).toEqual([]);
+  });
+
+  it('validates mtd.rotate prefix max length and valid values', () => {
+    const tooLong = validateNodeParameters('mtd.rotate', { prefix: 'a'.repeat(49) });
+    expect(tooLong).toContain('MTD prefix must be at most 48 characters.');
+
+    const valid = validateNodeParameters('mtd.rotate', { prefix: 'api-v2' });
+    expect(valid).toEqual([]);
+  });
+
+  it('migrates legacy chaos.memory mb field into amount when loading scenarios', () => {
+    const payload: ScenarioBuilderPayload = {
+      name: 'Legacy Memory',
+      steps: [{ id: 'mem-legacy', action: 'chaos.memory', params: { mb: 256 } }],
+    };
+    const graph = scenarioPayloadToGraph(payload);
+    expect(graph.nodes[0].data.params).toEqual({ action: 'allocate', amount: 256 });
+  });
+
+  it('normalizes string memory amount values to integers', () => {
+    const payload: ScenarioBuilderPayload = {
+      name: 'String Amount',
+      steps: [{ id: 'mem-1', action: 'chaos.memory', params: { amount: '512.8' } }],
+    };
+    const graph = scenarioPayloadToGraph(payload);
+    expect(graph.nodes[0].data.params).toEqual({ action: 'allocate', amount: 512 });
+  });
+
+  it('normalizes memory params directly for legacy and clear-mode shapes', () => {
+    expect(normalizeNodeParams('chaos.memory', { mb: 200 })).toEqual({
+      action: 'allocate',
+      amount: 200,
+    });
+    expect(normalizeNodeParams('chaos.memory', { action: 'clear', amount: 300 })).toEqual({
+      action: 'clear',
+    });
+  });
+
+  it('defaults invalid non-numeric memory amount values during normalization', () => {
+    const payload: ScenarioBuilderPayload = {
+      name: 'Invalid Amount',
+      steps: [{ id: 'mem-bad', action: 'chaos.memory', params: { amount: 'not-a-number' } }],
+    };
+    const graph = scenarioPayloadToGraph(payload);
+    expect(graph.nodes[0].data.params).toEqual({ action: 'allocate', amount: 100 });
+  });
+
+  it('trims mtd.rotate prefix values during normalization', () => {
+    const payload: ScenarioBuilderPayload = {
+      name: 'Trim Prefix',
+      steps: [{ id: 'mtd-1', action: 'mtd.rotate', params: { prefix: '  edge  ' } }],
+    };
+    const graph = scenarioPayloadToGraph(payload);
+    expect(graph.nodes[0].data.params).toEqual({ prefix: 'edge' });
+  });
+
+  it('passes through params for actions without special normalization rules', () => {
+    expect(normalizeNodeParams('chaos.cpu', { duration: 5000 })).toEqual({ duration: 5000 });
+  });
+
+  it('aggregates node parameter errors with node context', () => {
+    const badCpuNode = makeNode({ id: 'cpu-1', x: 0, y: 0, action: 'chaos.cpu' });
+    badCpuNode.data = {
+      ...badCpuNode.data,
+      params: { duration: 12 },
+    };
+    const nodes: ScenarioBuilderNode[] = [badCpuNode];
+
+    const errors = validateScenarioNodeParams(nodes);
+    expect(errors.some((error) => error.includes('cpu-1'))).toBe(true);
+    expect(errors.some((error) => error.includes('CPU duration'))).toBe(true);
   });
 });

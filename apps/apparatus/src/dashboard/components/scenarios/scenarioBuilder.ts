@@ -50,7 +50,7 @@ export const SCENARIO_ACTION_BLUEPRINTS: ActionBlueprint[] = [
     action: 'chaos.memory',
     label: 'Memory Surge',
     description: 'Allocate memory stress in MB.',
-    defaults: { mb: 256 },
+    defaults: { action: 'allocate', amount: 100 },
     delayMs: 1_000,
     className: 'ring-warning-500/30',
   },
@@ -77,8 +77,61 @@ export const SCENARIO_ACTION_BLUEPRINTS: ActionBlueprint[] = [
   },
 ];
 
+export const SCENARIO_PARAMETER_LIMITS = {
+  postStepDelayMs: { min: 0, max: 120_000 },
+  chaosCpuDurationMs: { min: 250, max: 120_000 },
+  chaosMemoryAmountMb: { min: 1, max: 4096 },
+  clusterAttackRate: { min: 1, max: 2000 },
+  delayDurationMs: { min: 10, max: 120_000 },
+  mtdPrefixMaxLength: 48,
+} as const;
+
 export function isScenarioAction(value: string): value is ScenarioAction {
   return SCENARIO_ACTION_BLUEPRINTS.some((blueprint) => blueprint.action === value);
+}
+
+export function createNodeDataForAction(action: ScenarioAction): ScenarioBuilderNodeData {
+  const blueprint = SCENARIO_ACTION_BLUEPRINTS.find((entry) => entry.action === action);
+  return {
+    action,
+    label: blueprint?.label ?? action,
+    params: { ...(blueprint?.defaults ?? {}) },
+    delayMs: blueprint?.delayMs,
+  };
+}
+
+export function normalizeNodeParams(action: ScenarioAction, params: Record<string, unknown>): Record<string, unknown> {
+  if (action === 'chaos.memory') {
+    const mode = params.action === 'clear' ? 'clear' : 'allocate';
+    if (mode === 'clear') return { action: 'clear' };
+
+    const parsedAmount = parseNumber(params.amount ?? params.mb);
+    const amountCandidate = parsedAmount !== null ? Math.trunc(parsedAmount) : 100;
+    return {
+      action: 'allocate',
+      amount: amountCandidate,
+    };
+  }
+
+  if (action === 'mtd.rotate') {
+    if (typeof params.prefix === 'string') {
+      const trimmedPrefix = params.prefix.trim();
+      if (trimmedPrefix.length === 0) {
+        const { prefix: _ignoredPrefix, ...rest } = params;
+        return rest;
+      }
+      return {
+        ...params,
+        prefix: trimmedPrefix,
+      };
+    }
+    if (params.prefix !== undefined) {
+      const { prefix: _invalidPrefix, ...rest } = params;
+      return rest;
+    }
+  }
+
+  return { ...params };
 }
 
 export function getNextNodeFallbackPosition(nodeCount: number): XYPosition {
@@ -181,6 +234,129 @@ export function validateScenarioGraph(nodes: ScenarioBuilderNode[], edges: Edge[
   return Array.from(errors);
 }
 
+function parseNumber(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isIntegerInRange(value: unknown, min: number, max: number): boolean {
+  const parsed = parseNumber(value);
+  return parsed !== null && Number.isInteger(parsed) && parsed >= min && parsed <= max;
+}
+
+function isHttpUrl(value: unknown): boolean {
+  if (typeof value !== 'string' || value.trim().length === 0) return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export function validateNodeParameters(
+  action: ScenarioAction,
+  params: Record<string, unknown>,
+  delayMs?: number
+): string[] {
+  const normalizedParams = normalizeNodeParams(action, params);
+  const errors: string[] = [];
+
+  if (
+    delayMs !== undefined &&
+    !isIntegerInRange(delayMs, SCENARIO_PARAMETER_LIMITS.postStepDelayMs.min, SCENARIO_PARAMETER_LIMITS.postStepDelayMs.max)
+  ) {
+    errors.push(
+      `Post-step delay must be an integer between ${SCENARIO_PARAMETER_LIMITS.postStepDelayMs.min} and ${SCENARIO_PARAMETER_LIMITS.postStepDelayMs.max} ms.`
+    );
+  }
+
+  switch (action) {
+    case 'chaos.cpu':
+      if (
+        !isIntegerInRange(
+          normalizedParams.duration,
+          SCENARIO_PARAMETER_LIMITS.chaosCpuDurationMs.min,
+          SCENARIO_PARAMETER_LIMITS.chaosCpuDurationMs.max
+        )
+      ) {
+        errors.push(
+          `CPU duration must be an integer between ${SCENARIO_PARAMETER_LIMITS.chaosCpuDurationMs.min} and ${SCENARIO_PARAMETER_LIMITS.chaosCpuDurationMs.max} ms.`
+        );
+      }
+      break;
+    case 'chaos.memory': {
+      const mode = normalizedParams.action === 'clear' ? 'clear' : 'allocate';
+      if (
+        mode === 'allocate' &&
+        !isIntegerInRange(
+          normalizedParams.amount,
+          SCENARIO_PARAMETER_LIMITS.chaosMemoryAmountMb.min,
+          SCENARIO_PARAMETER_LIMITS.chaosMemoryAmountMb.max
+        )
+      ) {
+        errors.push(
+          `Memory amount must be an integer between ${SCENARIO_PARAMETER_LIMITS.chaosMemoryAmountMb.min} and ${SCENARIO_PARAMETER_LIMITS.chaosMemoryAmountMb.max} MB.`
+        );
+      }
+      break;
+    }
+    case 'cluster.attack':
+      if (!isHttpUrl(normalizedParams.target)) {
+        errors.push('Cluster target must be a valid http/https URL.');
+      }
+      if (
+        !isIntegerInRange(
+          normalizedParams.rate,
+          SCENARIO_PARAMETER_LIMITS.clusterAttackRate.min,
+          SCENARIO_PARAMETER_LIMITS.clusterAttackRate.max
+        )
+      ) {
+        errors.push(
+          `Cluster rate must be an integer between ${SCENARIO_PARAMETER_LIMITS.clusterAttackRate.min} and ${SCENARIO_PARAMETER_LIMITS.clusterAttackRate.max}.`
+        );
+      }
+      break;
+    case 'mtd.rotate':
+      if (normalizedParams.prefix !== undefined) {
+        if (typeof normalizedParams.prefix !== 'string' || normalizedParams.prefix.trim().length === 0) {
+          errors.push('MTD prefix must be a non-empty string when provided.');
+        } else if (normalizedParams.prefix.length > SCENARIO_PARAMETER_LIMITS.mtdPrefixMaxLength) {
+          errors.push(`MTD prefix must be at most ${SCENARIO_PARAMETER_LIMITS.mtdPrefixMaxLength} characters.`);
+        }
+      }
+      break;
+    case 'delay':
+      if (
+        !isIntegerInRange(
+          normalizedParams.duration,
+          SCENARIO_PARAMETER_LIMITS.delayDurationMs.min,
+          SCENARIO_PARAMETER_LIMITS.delayDurationMs.max
+        )
+      ) {
+        errors.push(
+          `Delay duration must be an integer between ${SCENARIO_PARAMETER_LIMITS.delayDurationMs.min} and ${SCENARIO_PARAMETER_LIMITS.delayDurationMs.max} ms.`
+        );
+      }
+      break;
+    default:
+      break;
+  }
+
+  return errors;
+}
+
+export function validateScenarioNodeParams(nodes: ScenarioBuilderNode[]): string[] {
+  const errors: string[] = [];
+  for (const node of nodes) {
+    const nodeErrors = validateNodeParameters(node.data.action, node.data.params, node.data.delayMs);
+    for (const error of nodeErrors) {
+      errors.push(`${node.data.label} (${node.id}): ${error}`);
+    }
+  }
+  return errors;
+}
+
 const NODE_BASE_STYLE = {
   borderRadius: 8,
   borderWidth: 1,
@@ -204,17 +380,11 @@ function getBlueprint(action: ScenarioAction) {
 }
 
 export function createNodeFromAction(action: ScenarioAction, position: XYPosition): ScenarioBuilderNode {
-  const blueprint = getBlueprint(action);
   return {
     id: makeNodeId(),
     type: 'default',
     position,
-    data: {
-      action,
-      label: blueprint?.label ?? action,
-      params: { ...(blueprint?.defaults ?? {}) },
-      delayMs: blueprint?.delayMs,
-    },
+    data: createNodeDataForAction(action),
     style: NODE_BASE_STYLE,
   };
 }
@@ -309,7 +479,7 @@ export function scenarioPayloadToGraph(payload: ScenarioBuilderPayload): {
     data: {
       action: step.action,
       label: getBlueprint(step.action)?.label ?? step.action,
-      params: step.params,
+      params: normalizeNodeParams(step.action, step.params),
       delayMs: step.delayMs,
     },
     style: NODE_BASE_STYLE,

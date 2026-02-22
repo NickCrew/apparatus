@@ -11,11 +11,14 @@ import {
   ScenarioBuilderNode,
   ScenarioBuilderPayload,
   ScenarioBuilderNodeData,
+  createNodeDataForAction,
   createScenarioSnapshot,
   createNodeFromAction,
   getNextNodeFallbackPosition,
   graphToScenarioPayload,
   isScenarioAction,
+  validateNodeParameters,
+  validateScenarioNodeParams,
   scenarioPayloadToGraph,
   validateScenarioGraph,
 } from '../scenarios/scenarioBuilder';
@@ -70,15 +73,26 @@ export function ScenarioConsole() {
   const currentSnapshot = useMemo(() => createScenarioSnapshot(payload, edges), [edges, payload]);
   const hasUnsavedChanges = currentSnapshot !== baselineSnapshot;
   const jsonPreview = useMemo(() => JSON.stringify(payload, null, 2), [payload]);
+  const selectedNodes = useMemo(() => nodes.filter((node) => node.selected), [nodes]);
+  const selectedNode = selectedNodes.length === 1 ? selectedNodes[0] : null;
+  const hasMultiSelection = selectedNodes.length > 1;
+  const selectedNodeId = selectedNode?.id ?? null;
+  const selectedNodeData = selectedNode?.data;
+  const selectedNodeErrors = useMemo(() => {
+    if (!selectedNodeData) return [];
+    return validateNodeParameters(selectedNodeData.action, selectedNodeData.params, selectedNodeData.delayMs);
+  }, [selectedNodeData]);
 
   const flowValidationErrors = useMemo(() => validateScenarioGraph(nodes, edges), [edges, nodes]);
+  const paramValidationErrors = useMemo(() => validateScenarioNodeParams(nodes), [nodes]);
   const validationErrors = useMemo(() => {
     const issues: string[] = [];
     if (!scenarioName.trim()) issues.push('Scenario name is required.');
     if (nodes.length === 0) issues.push('Add at least one tool block to the canvas.');
     issues.push(...flowValidationErrors);
+    issues.push(...paramValidationErrors);
     return issues;
-  }, [flowValidationErrors, nodes, scenarioName]);
+  }, [flowValidationErrors, nodes, paramValidationErrors, scenarioName]);
 
   const confirmDiscardChanges = useCallback(() => {
     if (!hasUnsavedChanges) return true;
@@ -207,6 +221,90 @@ export function ScenarioConsole() {
     [setEdges]
   );
 
+  const updateSelectedNode = useCallback(
+    (updater: (node: ScenarioBuilderNode) => ScenarioBuilderNode) => {
+      if (!selectedNodeId) return;
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          if (node.id !== selectedNodeId) return node;
+          return updater(node);
+        })
+      );
+    },
+    [selectedNodeId, setNodes]
+  );
+
+  const handleSelectedActionChange = useCallback(
+    (action: ScenarioAction) => {
+      updateSelectedNode((node) => {
+        const nextData = createNodeDataForAction(action);
+        return {
+          ...node,
+          data: {
+            ...nextData,
+            delayMs: node.data.delayMs ?? nextData.delayMs,
+          },
+        };
+      });
+    },
+    [updateSelectedNode]
+  );
+
+  const handleSelectedDelayMsChange = useCallback(
+    (value: number) => {
+      updateSelectedNode((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          delayMs: Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0,
+        },
+      }));
+    },
+    [updateSelectedNode]
+  );
+
+  const handleSelectedParamChange = useCallback(
+    (key: string, value: string | number) => {
+      updateSelectedNode((node) => {
+        const nextParams = { ...node.data.params };
+        if (key === 'prefix' && typeof value === 'string' && value.trim().length === 0) {
+          delete nextParams.prefix;
+        } else {
+          const normalizedValue =
+            typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : value;
+          nextParams[key] = normalizedValue;
+        }
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            params: nextParams,
+          },
+        };
+      });
+    },
+    [updateSelectedNode]
+  );
+
+  const handleSelectedMemoryModeChange = useCallback(
+    (mode: 'allocate' | 'clear') => {
+      updateSelectedNode((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          params:
+            mode === 'clear'
+              ? { action: 'clear' }
+              : {
+                  action: 'allocate',
+                  amount: typeof node.data.params.amount === 'number' ? node.data.params.amount : 100,
+                },
+        },
+      }));
+    },
+    [updateSelectedNode]
+  );
+
   const handlePaletteDragStart = useCallback((event: DragEvent<HTMLDivElement>, action: ScenarioAction) => {
     event.dataTransfer.setData(DND_MIME, action);
     event.dataTransfer.effectAllowed = 'move';
@@ -288,8 +386,15 @@ export function ScenarioConsole() {
           scenarioDescription={scenarioDescription}
           validationErrors={validationErrors}
           jsonPreview={jsonPreview}
+          selectedNode={selectedNode}
+          hasMultiSelection={hasMultiSelection}
+          selectedNodeErrors={selectedNodeErrors}
           onScenarioNameChange={setScenarioName}
           onScenarioDescriptionChange={setScenarioDescription}
+          onSelectedActionChange={handleSelectedActionChange}
+          onSelectedDelayMsChange={handleSelectedDelayMsChange}
+          onSelectedParamChange={handleSelectedParamChange}
+          onSelectedMemoryModeChange={handleSelectedMemoryModeChange}
         />
       </div>
     </div>
