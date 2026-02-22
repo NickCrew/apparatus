@@ -86,6 +86,8 @@ MEDIUM vectors (test after):
   3. Deserialization attacks
 ```
 
+<img src="/dashboard/assets/diagrams/diagram-24-multivector-campaign-flow.svg" alt="Multi-vector campaign flow from reconnaissance through exploitation, persistence, escalation, and analysis." width="940" style="max-width: 100%; height: auto;" />
+
 ### Try It: Design a Multi-Vector Campaign
 
 **Campaign: "API Security Assessment"**
@@ -366,6 +368,8 @@ curl http://localhost:8090/api/redteam/autopilot/reports | jq .
 | **Defense Hold Time** | How long before defense weakened | Held for 10 min chaos |
 | **Recovery Time** | Time to restore after bypass | 30s |
 | **Correlation Score** | Likelihood attacks are coordinated | 0.8 (likely coordinated) |
+
+<img src="/dashboard/assets/diagrams/diagram-25-attack-success-rate.svg" alt="Attack success rate calculation flow based on blocked versus bypassed payload outcomes and escalation thresholds." width="940" style="max-width: 100%; height: auto;" />
 
 ### Campaign Report Template
 

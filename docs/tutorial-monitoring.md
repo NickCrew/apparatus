@@ -381,28 +381,7 @@ docker exec apparatus-server npm run tui
 
 **What you see:**
 
-```
-┌─────────────────────────────────────────────────┐
-│  APPARATUS Terminal Dashboard                   │
-├─────────────────────────────────────────────────┤
-│                                                 │
-│  System Status        │  Request Metrics        │
-│  ├─ Health: HEALTHY   │  ├─ RPS: 42.3          │
-│  ├─ Uptime: 5h 23m    │  ├─ Errors: 1.2%       │
-│  └─ Memory: 128MB     │  └─ Latency: 145ms     │
-│                       │                         │
-│  Recent Events        │  Vulnerabilities       │
-│  ├─ XSS @ /search     │  ├─ Reflected XSS: 2  │
-│  ├─ SQLi @ /api      │  ├─ SQL Injection: 1   │
-│  └─ Rate Limited: 5   │  └─ Path Traversal: 0  │
-│                                                 │
-│  Traffic Graph (last 60s)                       │
-│  ┌─────────────────────────────────┐           │
-│  │ ▁▃▄▅▆▇█▇▆▅▄▃▂▁ ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁│           │
-│  └─────────────────────────────────┘           │
-│                                                 │
-└─────────────────────────────────────────────────┘
-```
+<img src="/dashboard/assets/diagrams/diagram-44-terminal-dashboard-layout.svg" alt="Terminal monitoring dashboard layout showing status and request metrics, events and vulnerability panels, and traffic graph." width="940" style="max-width: 100%; height: auto;" />
 
 ### Terminal UI Features
 

@@ -65,26 +65,7 @@ The **Live Payload Fuzzer** is a **web-based HTTP request builder** that lives i
 
 The **Live Payload Fuzzer** form has these fields:
 
-```
-┌─ Live Payload Fuzzer ──────────────────────────┐
-│                                                 │
-│ Target Host: [localhost ↓]   Target Port: [8090]
-│                                                 │
-│ Method: [GET ↓]   Path: [/health]             │
-│                                                 │
-│ Headers (JSON):                                 │
-│ { "Content-Type": "application/json" }         │
-│                                                 │
-│ Query Parameters (JSON):                        │
-│ { "version": "2" }                             │
-│                                                 │
-│ Body (JSON or raw text):                        │
-│ { "data": "test" }                             │
-│                                                 │
-│ Timeout (ms): [5000]  [Send] [Reset]          │
-│                                                 │
-└─────────────────────────────────────────────────┘
-```
+<img src="/dashboard/assets/diagrams/diagram-42-live-fuzzer-interface.svg" alt="Live Payload Fuzzer interface flow from target and payload inputs through execution controls to captured response output." width="940" style="max-width: 100%; height: auto;" />
 
 ### Checkpoint
 
@@ -342,25 +323,7 @@ Latency: 500ms (or close to it)
 
 After each request, you'll see classified telemetry:
 
-```
-┌─ Lab Operations Output ─────────────────┐
-│                                         │
-│ Live Payload Fuzzer Results:           │
-│                                         │
-│ Status: 403 Forbidden                  │
-│ Blocked: true (Defense triggered)      │
-│ Latency: 47ms                          │
-│ Response Headers:                      │
-│   X-Rate-Limit: 10/min                │
-│   Content-Type: application/json      │
-│                                         │
-│ Response Body Preview (8KB):            │
-│ {"error": "Malicious payload..."}      │
-│                                         │
-│ Full Size: 156 bytes                   │
-│                                         │
-└─────────────────────────────────────────┘
-```
+<img src="/dashboard/assets/diagrams/diagram-43-lab-ops-output-structure.svg" alt="Lab Operations output structure including status and blocked flags, headers, body preview, and latency/size metrics." width="940" style="max-width: 100%; height: auto;" />
 
 ### What Each Field Means
 
@@ -374,6 +337,8 @@ After each request, you'll see classified telemetry:
 | **Full Size** | Total response body size in bytes |
 
 ### Interpreting Defense Classifications
+
+<img src="/dashboard/assets/diagrams/diagram-19-defense-classification.svg" alt="Defense classification decision flow for blocked, passed, and high-latency outcomes." width="940" style="max-width: 100%; height: auto;" />
 
 **Scenario 1: Blocked = true, Status 403**
 ```
@@ -436,6 +401,8 @@ Conduct a 5-minute security test and document:
 ### Workflow 1: Validate WAF Rule Coverage
 
 **Objective:** Test if all major attack vectors are blocked.
+
+<img src="/dashboard/assets/diagrams/diagram-20-fuzzer-middleware-flow.svg" alt="Live payload fuzzer request flow through MTD, deception/tarpit, WAF, and handler classification." width="940" style="max-width: 100%; height: auto;" />
 
 **Steps:**
 

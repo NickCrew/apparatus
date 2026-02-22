@@ -26,6 +26,35 @@ This file is retained as an index for existing links and quick lookup.
 | 16. Scenario Structure | [Scenario Builder Tutorial](tutorial-scenario-builder.md#scenario-structure) |
 | 17. Campaign Phases | [Advanced Red Team Tutorial](tutorial-advanced-red-team.md#campaign-structure) |
 | 18. Console Panel Structure | [Dashboard Tutorial](tutorial-dashboard.md#console-parts-standard-layout) |
+| 19. Defense Classification Decision | [Live Payload Fuzzer Tutorial](tutorial-live-payload-fuzzer.md#interpreting-defense-classifications) |
+| 20. Fuzzer Middleware Request Flow | [Live Payload Fuzzer Tutorial](tutorial-live-payload-fuzzer.md#workflow-1-validate-waf-rule-coverage) |
+| 21. k6 Load Test Lifecycle | [Testing Lab Tutorial](tutorial-testing-lab.md#understanding-k6-scenarios) |
+| 22. Testing Lab Multi-Tool Workflow | [Testing Lab Tutorial](tutorial-testing-lab.md#multi-tool-workflow-comprehensive-security-assessment) |
+| 23. Nuclei Scan Process | [Testing Lab Tutorial](tutorial-testing-lab.md#understanding-nuclei-templates) |
+| 24. Multi-Vector Campaign Flow | [Advanced Red Team Tutorial](tutorial-advanced-red-team.md#attack-vector-strategy) |
+| 25. Attack Success Rate Flow | [Advanced Red Team Tutorial](tutorial-advanced-red-team.md#metrics-to-collect) |
+| 26. CPU Impact Timeline | [Chaos Console Tutorial](tutorial-chaos-console.md#understanding-cpu-impact) |
+| 27. Memory Allocation Impact | [Chaos Console Tutorial](tutorial-chaos-console.md#understanding-memory-impact) |
+| 28. Chaos Recovery Decision Tree | [Chaos Console Tutorial](tutorial-chaos-console.md#issue-system-doesnt-recover) |
+| 29. Bottleneck Identification Matrix | [Performance Tuning Tutorial](tutorial-performance-tuning.md#metric-based-bottleneck-identification) |
+| 30. Optimization Impact Flow | [Performance Tuning Tutorial](tutorial-performance-tuning.md#reference-optimization-impact) |
+| 31. Node.js Memory Management | [Performance Tuning Tutorial](tutorial-performance-tuning.md#strategy-2-nodejs-runtime-tuning) |
+| 32. Incident Response Workflow | [Overview Dashboard Tutorial](tutorial-overview-dashboard.md#section-5-incident-response-workflow) |
+| 33. Pressure State Transitions | [Overview Dashboard Tutorial](tutorial-overview-dashboard.md#reading-the-pressure-gauge) |
+| 34. Scenario Execution Timeline | [Scenario Builder Tutorial](tutorial-scenario-builder.md#monitoring-execution) |
+| 35. Scenario Step Dependency Graph | [Scenario Builder Tutorial](tutorial-scenario-builder.md#pattern-1-gradual-load-increase) |
+| 36. Risk Score Calculation Flow | [Attacker Fingerprinting Tutorial](tutorial-attacker-fingerprinting.md#what-is-a-risk-score) |
+| 37. Attacker Response Decision Tree | [Attacker Fingerprinting Tutorial](tutorial-attacker-fingerprinting.md#scenario-active-attack-response) |
+| 38. Attacker Classification Taxonomy | [Attacker Fingerprinting Tutorial](tutorial-attacker-fingerprinting.md#understanding-attacker-categories) |
+| 39. Security Testing Methodology Map | [Testing Lab Tutorial](tutorial-testing-lab.md#what-is-the-testing-lab) |
+| 40. Tool Selection Decision Tree | [Testing Lab Tutorial](tutorial-testing-lab.md#try-it-navigate-to-testing-lab) |
+| 41. Testing Lab Layout | [Testing Lab Tutorial](tutorial-testing-lab.md#the-testing-lab-layout) |
+| 42. Live Fuzzer Interface | [Live Payload Fuzzer Tutorial](tutorial-live-payload-fuzzer.md#the-fuzzer-interface) |
+| 43. Lab Operations Output Structure | [Live Payload Fuzzer Tutorial](tutorial-live-payload-fuzzer.md#reading-the-lab-operations-output) |
+| 44. Terminal Dashboard Layout | [Monitoring Tutorial](tutorial-monitoring.md#section-5-terminal-ui-monitoring) |
+| 45. Autopilot Console Layout | [Dashboard Tutorial](tutorial-dashboard.md#autopilot-console-walkthrough) |
+| 46. Defense Console Layout | [Dashboard Tutorial](tutorial-dashboard.md#defense-console-walkthrough) |
+| 47. Traffic Console Layout | [Dashboard Tutorial](tutorial-dashboard.md#traffic-console-walkthrough) |
 
 ## Diagram Source Files
 

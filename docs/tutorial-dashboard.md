@@ -230,30 +230,7 @@ AI red team agent that autonomously attacks your target application.
 
 **What you see:**
 
-```
-┌─────────────────────────────────────┐
-│ Autopilot Console                   │
-├─────────────────────────────────────┤
-│ Status: [RUNNING | IDLE | STOPPED]  │
-│ Campaign ID: autopilot-xxxxx        │
-├─────────────────────────────────────┤
-│ [START] [STOP] [CLEAR] [EXPORT]     │
-├─────────────────────────────────────┤
-│ Filter: [All] [Vulnerable] [Blocked]│
-├─────────────────────────────────────┤
-│ Attack History:                     │
-│ ├─ XSS Payload → VULNERABLE         │
-│ ├─ SQLi Probe → BLOCKED              │
-│ ├─ CPU Spike → TIMEOUT              │
-│ └─ (more events...)                 │
-├─────────────────────────────────────┤
-│ Findings: 2 vulnerabilities found   │
-│ ├─ Reflected XSS at /search         │
-│ └─ SQL Error Leakage at /api/users  │
-├─────────────────────────────────────┤
-│ [Export Findings] [View Report]     │
-└─────────────────────────────────────┘
-```
+<img src="/dashboard/assets/diagrams/diagram-45-autopilot-console-layout.svg" alt="Autopilot console layout with campaign status, controls, attack history, findings, and export/report actions." width="940" style="max-width: 100%; height: auto;" />
 
 ### Key Controls
 
@@ -313,29 +290,7 @@ Configure WAF rules, rate limiting, tarpit, and other defenses.
 
 **What you see:**
 
-```
-┌──────────────────────────────────────┐
-│ Defense Rules (WAF)                  │
-├──────────────────────────────────────┤
-│ [+ ADD RULE] [ENABLE] [DISABLE]      │
-├──────────────────────────────────────┤
-│ Active Rules: 5                      │
-├──────────────────────────────────────┤
-│ Rule List:                           │
-│ ├─ Block XSS (ACTIVE)                │
-│ │  Pattern: <script|onerror|...      │
-│ │  [Edit] [Delete]                   │
-│ ├─ Block SQLi (ACTIVE)               │
-│ │  Pattern: UNION.*SELECT|--         │
-│ │  [Edit] [Delete]                   │
-│ └─ ...                               │
-├──────────────────────────────────────┤
-│ Statistics:                          │
-│ ├─ Requests Blocked: 142             │
-│ ├─ Block Rate: 8.3%                  │
-│ └─ Last Blocked: 2026-02-21 19:53    │
-└──────────────────────────────────────┘
-```
+<img src="/dashboard/assets/diagrams/diagram-46-defense-console-layout.svg" alt="Defense console layout showing rule controls, active rule list, defense statistics, and supporting panels." width="940" style="max-width: 100%; height: auto;" />
 
 Also visible in this console:
 - **Tarpit Status** — IPs currently trapped
@@ -396,28 +351,7 @@ Real-time HTTP requests and responses flowing through Apparatus.
 
 **What you see:**
 
-```
-┌──────────────────────────────────────┐
-│ Traffic Monitor                      │
-├──────────────────────────────────────┤
-│ [PAUSE] [CLEAR] [EXPORT]             │
-├──────────────────────────────────────┤
-│ Stats: 2.4 GB/s | Error Rate: 3.2%   │
-│        Avg Latency: 145ms            │
-├──────────────────────────────────────┤
-│ Filters: [All] [2xx] [3xx] [4xx] [5xx]│
-│ Search: [_________] Status, Path...  │
-├──────────────────────────────────────┤
-│ Request Feed (newest first):         │
-│ ├─ 10:53:42 | GET /api/users        │ 200 | 142ms
-│ ├─ 10:53:41 | POST /search         │ 403 | 18ms  (WAF!)
-│ ├─ 10:53:40 | GET /health          │ 200 | 5ms
-│ ├─ 10:53:39 | PUT /admin           │ 403 | 12ms  (Blocked)
-│ └─ ...                              │
-├──────────────────────────────────────┤
-│ [Show Details] [Replay] [Block]      │
-└──────────────────────────────────────┘
-```
+<img src="/dashboard/assets/diagrams/diagram-47-traffic-console-layout.svg" alt="Traffic console layout showing controls, traffic stats, filters, request feed, and row actions." width="940" style="max-width: 100%; height: auto;" />
 
 Each row shows:
 - **Timestamp** — When request arrived

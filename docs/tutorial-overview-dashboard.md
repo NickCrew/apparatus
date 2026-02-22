@@ -184,6 +184,8 @@ All routes OK  Heavy routes   Request shedding
                  shedding
 ```
 
+<img src="/dashboard/assets/diagrams/diagram-33-pressure-state-transitions.svg" alt="Pressure gauge state transitions between Stable, Elevated, and Critical based on event loop lag thresholds." width="940" style="max-width: 100%; height: auto;" />
+
 ### Pressure Calculation
 
 The gauge is calculated from **event loop lag**:
@@ -421,6 +423,8 @@ Latency spiked to 450ms (P99)
 ```
 
 **What do you do?**
+
+<img src="/dashboard/assets/diagrams/diagram-32-incident-response-workflow.svg" alt="Incident response workflow from severity assessment through source investigation, response choice, and verification." width="940" style="max-width: 100%; height: auto;" />
 
 ### Step-by-Step Response
 

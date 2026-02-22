@@ -124,6 +124,8 @@ When CPU spikes:
 - ⬆️ Error rate may increase (queue overflow)
 - ⬆️ Pressure gauge moves toward CRITICAL
 
+<img src="/dashboard/assets/diagrams/diagram-26-cpu-impact-timeline.svg" alt="CPU spike impact timeline from baseline to spike window to recovery validation." width="940" style="max-width: 100%; height: auto;" />
+
 ### Try It: Measure CPU Impact
 
 **Goal:** See how system responds to CPU stress.
@@ -226,6 +228,8 @@ When memory spikes:
 - ⬆️ Garbage collection pauses increase
 - ⬆️ Latency may increase
 - ⬆️ Error rate may increase if OOM killer triggers
+
+<img src="/dashboard/assets/diagrams/diagram-27-memory-allocation-impact.svg" alt="Memory allocation impact stages from low allocation through high-pressure ranges and cleanup." width="940" style="max-width: 100%; height: auto;" />
 
 ### Memory Controls
 
@@ -601,6 +605,8 @@ After chaos ends, metrics still degraded
 2. Check if another chaos experiment is running
 3. Wait longer (recovery can take 30+ seconds)
 4. If still stuck after 5 min, restart Apparatus
+
+<img src="/dashboard/assets/diagrams/diagram-28-chaos-recovery-decision-tree.svg" alt="Recovery decision tree for post-chaos degraded metrics and escalation paths." width="940" style="max-width: 100%; height: auto;" />
 
 ### Issue: Dashboard Disconnects During Crash
 

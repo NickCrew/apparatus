@@ -186,6 +186,8 @@ Breaking point: ~500 RPS
 
 ### Metric-Based Bottleneck Identification
 
+<img src="/dashboard/assets/diagrams/diagram-29-bottleneck-matrix.svg" alt="Metric-based bottleneck matrix mapping latency, CPU, memory, and error patterns to likely root causes." width="940" style="max-width: 100%; height: auto;" />
+
 ```
 Bottleneck indicators:
 
@@ -262,6 +264,8 @@ node --max-old-space-size=4096 \
 **Parameters:**
 - `--max-old-space-size=4096` — Heap size (MB), default 2048
 - `--max-semi-space-size=512` — Semispaces for young generation
+
+<img src="/dashboard/assets/diagrams/diagram-31-node-memory-management.svg" alt="Node.js memory management flow through young generation, minor GC, old generation, major GC, and event loop lag impact." width="940" style="max-width: 100%; height: auto;" />
 
 **Experiment:**
 ```
@@ -612,6 +616,8 @@ You've learned:
 ---
 
 ## Reference: Optimization Impact
+
+<img src="/dashboard/assets/diagrams/diagram-30-optimization-impact.svg" alt="Optimization impact flow showing stacked throughput gains from middleware, heap, async, and connection tuning." width="940" style="max-width: 100%; height: auto;" />
 
 ```
 Middleware Optimization:      +20–30% RPS
