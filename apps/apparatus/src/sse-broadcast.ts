@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { EventEmitter } from "events";
 import { randomUUID } from "crypto";
+import { recordDeceptionSignal, recordRequestSignal, recordTarpitSignal } from "./attacker-tracker.js";
 
 // Configuration
 const MAX_SSE_CLIENTS = 100;
@@ -124,14 +125,17 @@ export function broadcastRequest(request: any): void {
     if (!request.id) {
         request.id = randomUUID();
     }
+    recordRequestSignal(request);
     sseBroadcaster.broadcast('request', request);
 }
 
 export function broadcastDeception(event: any): void {
+    recordDeceptionSignal(event);
     sseBroadcaster.broadcast('deception', event);
 }
 
 export function broadcastTarpit(action: 'trapped' | 'released', ip: string): void {
+    recordTarpitSignal({ action, ip });
     sseBroadcaster.broadcast('tarpit', { action, ip });
 }
 

@@ -66,6 +66,7 @@ import {
     drillStatusHandler,
 } from "./drills.js";
 import { startDemoLoop, stopDemoLoop, getDemoConfig, updateDemoConfig, type DemoConfig } from "./demo-mode.js";
+import { attackerProfileHandler, attackerRegistryHandler } from "./attacker-tracker.js";
 import { request } from "undici";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -266,6 +267,10 @@ export function createApp(): Express {
     app.post("/drills/:id/mark-detected", securityGate, drillMarkDetectedHandler);
     app.post("/drills/:id/cancel", securityGate, drillCancelHandler);
     app.get("/drills/:id/debrief", securityGate, drillDebriefHandler);
+
+    // Attacker Fingerprinting
+    app.get("/api/attackers", securityGate, attackerRegistryHandler);
+    app.get("/api/attackers/:ip", securityGate, attackerProfileHandler);
 
     // Swagger Documentation
     app.use("/docs", swaggerUi.serve as unknown as express.RequestHandler[], swaggerUi.setup(swaggerDocument) as unknown as express.RequestHandler);
