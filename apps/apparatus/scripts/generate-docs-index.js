@@ -64,6 +64,30 @@ function generateId(filename, title) {
   return `${name}-${titleSlug}`.substring(0, 50).replace(/-+$/, '');
 }
 
+function embedSvgDiagrams(content) {
+  // Replace SVG image links with embedded base64 data URIs
+  const svgRegex = /!\[([^\]]*)\]\(\/dashboard\/assets\/diagrams\/(diagram-[\w-]+\.svg)\)/g;
+
+  return content.replace(svgRegex, (match, alt, filename) => {
+    const diagramsDir = path.join(__dirname, '../../../docs/assets/diagrams');
+    const svgPath = path.join(diagramsDir, filename);
+
+    try {
+      if (!fs.existsSync(svgPath)) {
+        console.warn(`⚠️  SVG not found: ${filename}`);
+        return match; // Return original if file not found
+      }
+
+      const svgContent = fs.readFileSync(svgPath, 'utf-8');
+      const base64 = Buffer.from(svgContent).toString('base64');
+      return `![${alt}](data:image/svg+xml;base64,${base64})`;
+    } catch (error) {
+      console.warn(`⚠️  Error embedding ${filename}: ${error.message}`);
+      return match; // Return original if error
+    }
+  });
+}
+
 function main() {
   const docs = [];
 
@@ -72,7 +96,10 @@ function main() {
 
   for (const filename of files.sort()) {
     const filepath = path.join(docsDir, filename);
-    const content = fs.readFileSync(filepath, 'utf-8');
+    let content = fs.readFileSync(filepath, 'utf-8');
+
+    // Embed SVG diagrams as base64 data URIs
+    content = embedSvgDiagrams(content);
 
     const title = extractTitle(content);
     const category = getCategoryFromFile(filename);

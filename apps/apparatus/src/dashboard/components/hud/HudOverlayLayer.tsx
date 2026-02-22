@@ -11,7 +11,6 @@ import { createPortal } from 'react-dom';
 import {
   Activity,
   BrainCircuit,
-  Eye,
   EyeOff,
   GripHorizontal,
   ShieldAlert,
@@ -56,12 +55,12 @@ function getDefaultPreferences(viewportWidth: number, viewportHeight: number): H
     stats: {
       x: Math.max(12, viewportWidth - statsSize.width - 16),
       y: 16,
-      visible: true,
+      visible: false,
     },
     thoughts: {
       x: 16,
       y: Math.max(16, viewportHeight - thoughtsSize.height - 16),
-      visible: true,
+      visible: false,
     },
   };
 }
@@ -165,8 +164,52 @@ export function HudOverlayLayer() {
       }
     };
 
+    const handleHudWidgetVisibilityChange = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      const detail = event.detail as { widgetId?: WidgetId; visible?: boolean };
+      if (!detail || !detail.widgetId || typeof detail.visible !== 'boolean') return;
+      const nextVisible = detail.visible;
+
+      if (detail.widgetId === 'stats') {
+        setPreferences((prev) => (prev
+          ? {
+              ...prev,
+              stats: {
+                ...prev.stats,
+                visible: nextVisible,
+              },
+            }
+          : prev
+        ));
+      } else {
+        setPreferences((prev) => (prev
+          ? {
+              ...prev,
+              thoughts: {
+                ...prev.thoughts,
+                visible: nextVisible,
+              },
+            }
+          : prev
+        ));
+      }
+
+      setHudHidden((currentHidden) => {
+        if (nextVisible) return false;
+        const currentPreferences = preferencesRef.current;
+        if (!currentPreferences) return currentHidden;
+        const otherWidgetId: WidgetId = detail.widgetId === 'stats' ? 'thoughts' : 'stats';
+        const otherVisible = currentPreferences[otherWidgetId].visible;
+        return otherVisible ? false : true;
+      });
+    };
+
     window.addEventListener('hud-visibility-changed', handleHudVisibilityChange);
-    return () => window.removeEventListener('hud-visibility-changed', handleHudVisibilityChange);
+    window.addEventListener('hud-widget-visibility-changed', handleHudWidgetVisibilityChange);
+    return () => {
+      window.removeEventListener('hud-visibility-changed', handleHudVisibilityChange);
+      window.removeEventListener('hud-widget-visibility-changed', handleHudWidgetVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -190,6 +233,17 @@ export function HudOverlayLayer() {
       // localStorage unavailable
     }
   }, [hudHidden]);
+
+  useEffect(() => {
+    if (!preferences) return;
+    window.dispatchEvent(new CustomEvent('hud-preferences-changed', {
+      detail: {
+        hidden: hudHidden,
+        statsVisible: preferences.stats.visible,
+        thoughtsVisible: preferences.thoughts.visible,
+      },
+    }));
+  }, [preferences, hudHidden]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -316,35 +370,6 @@ export function HudOverlayLayer() {
 
   return createPortal(
     <div className="fixed inset-0 z-[9000] pointer-events-none select-none" role="complementary" aria-label="HUD overlay">
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-auto">
-        <div
-          className="flex items-center gap-2 rounded-md bg-neutral-950/70 px-2 py-1.5 backdrop-blur-sm shadow-[0_10px_35px_rgba(0,0,0,0.45)]"
-          role="toolbar"
-          aria-label="HUD widget visibility"
-        >
-          <HudToggle
-            label="Stats"
-            active={preferences.stats.visible}
-            onClick={() => setWidgetVisible('stats', !preferences.stats.visible)}
-          />
-          <HudToggle
-            label="Thoughts"
-            active={preferences.thoughts.visible}
-            onClick={() => setWidgetVisible('thoughts', !preferences.thoughts.visible)}
-          />
-          <button
-            type="button"
-            onClick={() => setHudHidden(true)}
-            aria-expanded="true"
-            className="inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-neutral-400 hover:text-neutral-200 transition-colors"
-            aria-label="Hide all HUD widgets"
-          >
-            <EyeOff className="h-3.5 w-3.5" />
-            Hide
-          </button>
-        </div>
-      </div>
-
       {preferences.stats.visible && (
         <div
           className="pointer-events-auto fixed w-[248px] rounded-md bg-neutral-950/65 px-3 py-2.5 backdrop-blur-sm shadow-[0_18px_45px_rgba(0,0,0,0.55)]"
@@ -462,32 +487,5 @@ export function HudOverlayLayer() {
       )}
     </div>,
     document.body
-  );
-}
-
-function HudToggle({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-[10px] font-mono uppercase tracking-widest transition-colors',
-        active
-          ? 'bg-primary/15 text-primary-200'
-          : 'bg-neutral-900/70 text-neutral-400 hover:text-neutral-200'
-      )}
-    >
-      {active ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-      {label}
-    </button>
   );
 }
