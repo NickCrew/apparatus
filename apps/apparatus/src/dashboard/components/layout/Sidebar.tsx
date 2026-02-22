@@ -21,12 +21,19 @@ import {
   Server,
   BookOpen,
   ListTree,
-  Eye,
+  BrainCircuit,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
 import { cn } from '../ui/cn';
 import { useApparatus } from '../../providers/ApparatusProvider';
+import {
+  HUD_STATE_CHANGED_EVENT,
+  loadHudHiddenPreference,
+  loadHudWidgetVisibilityPreference,
+  persistHudVisibilityState,
+  type HudStateChangedDetail,
+} from '../hud/hudState';
 
 interface NavSection {
   title: string;
@@ -93,7 +100,9 @@ export function Sidebar() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Core']));
   const [showKeyboardHints, setShowKeyboardHints] = useState(false);
-  const [hudHidden, setHudHidden] = useState(false);
+  const [hudHidden, setHudHidden] = useState(true);
+  const [hudStatsVisible, setHudStatsVisible] = useState(false);
+  const [hudThoughtsVisible, setHudThoughtsVisible] = useState(false);
 
   // Load sidebar state from localStorage
   useEffect(() => {
@@ -106,8 +115,11 @@ export function Sidebar() {
         setExpandedSections(new Set(JSON.parse(expanded)));
       }
 
-      const isHidden = localStorage.getItem('apparatus-dashboard-hud:hidden') === '1';
+      const isHidden = loadHudHiddenPreference();
+      const widgetVisibility = loadHudWidgetVisibilityPreference();
       setHudHidden(isHidden);
+      setHudStatsVisible(!isHidden && widgetVisibility.statsVisible);
+      setHudThoughtsVisible(!isHidden && widgetVisibility.thoughtsVisible);
     } catch {
       // localStorage unavailable
     }
@@ -138,16 +150,35 @@ export function Sidebar() {
     }
   };
 
-  const toggleHudVisibility = () => {
-    const newState = !hudHidden;
-    try {
-      localStorage.setItem('apparatus-dashboard-hud:hidden', newState ? '1' : '0');
-      setHudHidden(newState);
-      // Dispatch custom event to notify HudOverlayLayer
-      window.dispatchEvent(new CustomEvent('hud-visibility-changed', { detail: { hidden: newState } }));
-    } catch {
-      // localStorage unavailable
-    }
+  const persistHudState = (
+    nextHidden: boolean,
+    nextStatsVisible: boolean,
+    nextThoughtsVisible: boolean
+  ): HudStateChangedDetail => {
+    const detail: HudStateChangedDetail = {
+      hidden: nextHidden,
+      statsVisible: nextStatsVisible,
+      thoughtsVisible: nextThoughtsVisible,
+    };
+    persistHudVisibilityState(detail);
+    return detail;
+  };
+
+  const updateHudVisibility = (nextStatsVisible: boolean, nextThoughtsVisible: boolean) => {
+    const nextHidden = !(nextStatsVisible || nextThoughtsVisible);
+    setHudStatsVisible(nextStatsVisible);
+    setHudThoughtsVisible(nextThoughtsVisible);
+    setHudHidden(nextHidden);
+    const detail = persistHudState(nextHidden, nextStatsVisible, nextThoughtsVisible);
+    window.dispatchEvent(new CustomEvent(HUD_STATE_CHANGED_EVENT, { detail }));
+  };
+
+  const toggleHudStats = () => {
+    updateHudVisibility(!hudStatsVisible, hudThoughtsVisible);
+  };
+
+  const toggleHudThoughts = () => {
+    updateHudVisibility(hudStatsVisible, !hudThoughtsVisible);
   };
 
   return (
@@ -160,9 +191,9 @@ export function Sidebar() {
         {!sidebarCollapsed && (
           <div className="flex items-center gap-2.5">
             <img
-              src={`${import.meta.env.BASE_URL}assets/logo/apparatus-logo.svg`}
+              src={`${import.meta.env.BASE_URL}assets/logo/apparatus-icon-light.svg`}
               alt="Apparatus"
-              className="h-7"
+              className="h-8 w-auto"
             />
             <span className="text-base font-display font-semibold text-neutral-200 tracking-wide">
               Apparatus
@@ -242,16 +273,55 @@ export function Sidebar() {
       {/* Footer — HUD Controls, Keyboard Shortcuts & Status */}
       {!sidebarCollapsed && (
       <div className="border-t border-neutral-800/40 bg-neutral-900/20">
-        {/* HUD Toggle */}
+        {/* HUD Toggles */}
         <div className="px-3 py-2">
-          <button
-            onClick={toggleHudVisibility}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-sm text-[11px] font-display text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 transition-colors"
-            title={hudHidden ? 'Show HUD widgets' : 'Hide HUD widgets'}
-          >
-            <Eye className="h-3.5 w-3.5" />
-            <span>{hudHidden ? 'Show HUD' : 'Hide HUD'}</span>
-          </button>
+          <div role="group" aria-label="HUD widget controls" className="space-y-1.5">
+            <button
+              onClick={toggleHudStats}
+              aria-pressed={hudStatsVisible}
+              className={cn(
+                'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-sm text-[11px] font-display transition-colors',
+                hudStatsVisible
+                  ? 'text-primary-300 bg-primary-500/10 border border-primary-500/25'
+                  : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 border border-transparent'
+              )}
+              title={hudStatsVisible ? 'Hide HUD stats widget' : 'Show HUD stats widget'}
+            >
+              <span className="flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5" />
+                <span>HUD Stats</span>
+              </span>
+              <span className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                hudStatsVisible ? 'bg-primary-400 shadow-[0_0_6px_rgba(0,240,255,0.7)]' : 'bg-neutral-700'
+              )} />
+            </button>
+            <button
+              onClick={toggleHudThoughts}
+              aria-pressed={hudThoughtsVisible}
+              className={cn(
+                'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-sm text-[11px] font-display transition-colors',
+                hudThoughtsVisible
+                  ? 'text-primary-300 bg-primary-500/10 border border-primary-500/25'
+                  : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 border border-transparent'
+              )}
+              title={hudThoughtsVisible ? 'Hide AI thought widget' : 'Show AI thought widget'}
+            >
+              <span className="flex items-center gap-2">
+                <BrainCircuit className="h-3.5 w-3.5" />
+                <span>AI Thought</span>
+              </span>
+              <span className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                hudThoughtsVisible ? 'bg-primary-400 shadow-[0_0_6px_rgba(0,240,255,0.7)]' : 'bg-neutral-700'
+              )} />
+            </button>
+            {hudHidden && (
+              <div className="px-1 text-[10px] font-mono uppercase tracking-wide text-neutral-600">
+                HUD hidden
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Keyboard Shortcuts Section */}

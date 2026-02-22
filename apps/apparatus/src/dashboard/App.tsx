@@ -75,18 +75,7 @@ function Layout() {
       <DocViewer docId={selectedDocId} onClose={closeDoc} />
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 relative">
-        <Header
-          onHelpClick={() => setHelpModalOpen(true)}
-          onCommandClick={() => {
-            // Dispatch Cmd+K to open command palette
-            const event = new KeyboardEvent('keydown', {
-              key: 'k',
-              metaKey: true,
-              bubbles: true
-            });
-            document.dispatchEvent(event);
-          }}
-        />
+        <Header />
         <MainContent>
           <Outlet />
         </MainContent>

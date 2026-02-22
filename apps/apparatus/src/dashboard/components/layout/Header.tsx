@@ -1,15 +1,7 @@
 import { useApparatus } from '../../providers/ApparatusProvider';
-import { Bell, Terminal, HelpCircle } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { cn } from '../ui/cn';
 
-interface HeaderProps {
-  title?: string;
-  onHelpClick?: () => void;
-  onCommandClick?: () => void;
-}
-
-export function Header({ onHelpClick, onCommandClick }: HeaderProps) {
+export function Header() {
   const { health } = useApparatus();
   const isHealthy = health.status === 'healthy';
 
@@ -55,36 +47,6 @@ export function Header({ onHelpClick, onCommandClick }: HeaderProps) {
           )}
         </div>
 
-        <div className="h-5 w-px bg-white/5 mx-1" />
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-neutral-600 hover:text-primary transition-all h-8 w-8"
-          title="Notifications"
-        >
-          <Bell className="h-3.5 w-3.5" />
-        </Button>
-
-        <Button
-          onClick={onCommandClick}
-          variant="ghost"
-          size="icon"
-          className="text-neutral-600 hover:text-primary h-8 w-8"
-          title="Commands (⌘K)"
-        >
-          <Terminal className="h-3.5 w-3.5" />
-        </Button>
-
-        <Button
-          onClick={onHelpClick}
-          variant="ghost"
-          size="icon"
-          className="text-neutral-600 hover:text-primary h-8 w-8"
-          title="Help (⌘?)"
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-        </Button>
       </div>
     </header>
   );
