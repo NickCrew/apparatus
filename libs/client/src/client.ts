@@ -48,6 +48,7 @@ import { RealtimeApi } from './categories/realtime.js';
 import { ScenariosApi } from './categories/scenarios.js';
 import { DrillsApi } from './categories/drills.js';
 import { AutopilotApi } from './categories/autopilot.js';
+import { SimulatorApi } from './categories/simulator.js';
 
 export class ApparatusClient {
   private readonly http: HttpClient;
@@ -74,6 +75,7 @@ export class ApparatusClient {
   private _scenarios?: ScenariosApi;
   private _drills?: DrillsApi;
   private _autopilot?: AutopilotApi;
+  private _simulator?: SimulatorApi;
 
   constructor(options: ApparatusClientOptions) {
     this.http = new HttpClient(options);
@@ -277,6 +279,16 @@ export class ApparatusClient {
       this._autopilot = new AutopilotApi(this.http);
     }
     return this._autopilot;
+  }
+
+  /**
+   * Simulator API - Supply chain and dependency graph simulation
+   */
+  get simulator(): SimulatorApi {
+    if (!this._simulator) {
+      this._simulator = new SimulatorApi(this.http);
+    }
+    return this._simulator;
   }
 
   // ============================================================================

@@ -29,6 +29,7 @@ import { registerScenariosCommands } from './commands/scenarios.js';
 import { registerDrillsCommands } from './commands/drills.js';
 import { registerAutopilotCommands } from './commands/autopilot.js';
 import { registerDataCommands } from './commands/data.js';
+import { registerSimulatorCommands } from './commands/simulator.js';
 
 export interface GlobalOptions {
   url?: string;
@@ -114,6 +115,7 @@ Environment Variables:
   registerNetworkCommands(program, getClient);
   registerStorageCommands(program, getClient);
   registerDataCommands(program, getClient);
+  registerSimulatorCommands(program, getClient);
   registerTrafficCommands(program, getClient);
   registerIdentityCommands(program, getClient);
   registerLabsCommands(program, getClient);
