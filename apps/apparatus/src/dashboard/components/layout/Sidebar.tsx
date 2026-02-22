@@ -193,9 +193,9 @@ export function Sidebar() {
             <img
               src={`${import.meta.env.BASE_URL}assets/logo/apparatus-icon-light.svg`}
               alt="Apparatus"
-              className="h-8 w-auto"
+              className="h-9 w-auto"
             />
-            <span className="text-base font-display font-semibold text-neutral-200 tracking-wide">
+            <span className="text-lg font-display font-semibold text-neutral-200 tracking-wide">
               Apparatus
             </span>
           </div>

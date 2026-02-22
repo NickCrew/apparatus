@@ -16,8 +16,14 @@ interface DocEntry {
   headings: string[];
 }
 
+const NON_PUBLIC_CATEGORY = 'other';
+
 function normalizeText(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function isPublicDoc(doc: DocEntry): boolean {
+  return doc.category.trim().toLowerCase() !== NON_PUBLIC_CATEGORY;
 }
 
 export function DocumentationHub() {
@@ -34,7 +40,7 @@ export function DocumentationHub() {
     setLoading(true);
     loadDocsIndex()
       .then((loaded) => {
-        setDocs(loaded as DocEntry[]);
+        setDocs((loaded as DocEntry[]).filter(isPublicDoc));
         setError(null);
       })
       .catch((err) => {
@@ -76,16 +82,18 @@ export function DocumentationHub() {
   }, [filteredDocs]);
 
   const selectedDoc = useMemo(() => {
-    if (filteredDocs.length === 0) return null;
-    return filteredDocs.find((doc) => doc.id === docId) ?? filteredDocs[0];
-  }, [filteredDocs, docId]);
+    if (!docId || docs.length === 0) return null;
+    return docs.find((doc) => doc.id === docId) ?? null;
+  }, [docs, docId]);
+
+  const isHubPage = !docId;
 
   useEffect(() => {
-    if (!selectedDoc) return;
-    if (docId !== selectedDoc.id) {
-      navigate(`/docs/${selectedDoc.id}`, { replace: true });
+    if (!docId) return;
+    if (!loading && !selectedDoc) {
+      navigate('/docs', { replace: true });
     }
-  }, [selectedDoc, docId, navigate]);
+  }, [docId, loading, selectedDoc, navigate]);
 
   useEffect(() => {
     setActiveHeading(null);
@@ -93,6 +101,8 @@ export function DocumentationHub() {
   }, [selectedDoc?.id]);
 
   useEffect(() => {
+    if (!selectedDoc) return;
+
     const container = contentRef.current;
     if (!container) return;
 
@@ -199,7 +209,7 @@ export function DocumentationHub() {
                         type="button"
                         onClick={() => navigate(`/docs/${doc.id}`)}
                         className={cn(
-                          'w-full rounded-sm border px-2 py-2 text-left transition-colors',
+                          'w-full rounded-sm border px-3 py-3 min-h-[72px] text-left transition-colors',
                           active
                             ? 'border-primary/40 bg-primary/10'
                             : 'border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900/70 hover:border-neutral-700'
@@ -208,8 +218,8 @@ export function DocumentationHub() {
                         <div className="flex items-start gap-2">
                           <FileText className="h-3.5 w-3.5 mt-0.5 text-neutral-500" />
                           <div className="min-w-0">
-                            <div className="text-xs text-neutral-100 truncate">{doc.title}</div>
-                            <div className="text-[10px] text-neutral-500 mt-0.5 line-clamp-2">
+                            <div className="text-sm font-medium text-neutral-100 line-clamp-1">{doc.title}</div>
+                            <div className="text-xs text-neutral-500 mt-1 line-clamp-1">
                               {doc.excerpt}
                             </div>
                           </div>
@@ -222,22 +232,41 @@ export function DocumentationHub() {
             ))}
           </div>
 
-          <div className="h-60 border-t border-neutral-800/60 px-3 py-3 overflow-y-auto">
-            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-neutral-600 mb-2">
-              <ListTree className="h-3 w-3" />
-              Outline
+        <div className="h-60 border-t border-neutral-800/60 px-3 py-3 overflow-y-auto">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-neutral-600 mb-2">
+            <ListTree className="h-3 w-3" />
+            {isHubPage ? 'Quick Links' : 'Outline'}
+          </div>
+
+          {isHubPage && filteredDocs.length === 0 && (
+            <div className="text-xs text-neutral-500">No public docs available.</div>
+          )}
+
+          {isHubPage && filteredDocs.length > 0 && (
+            <div className="space-y-1">
+              {filteredDocs.slice(0, 14).map((doc) => (
+                <button
+                  key={doc.id}
+                  type="button"
+                  onClick={() => navigate(`/docs/${doc.id}`)}
+                  className="w-full text-left text-xs rounded-sm px-2 py-1 border border-transparent text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/60 transition-colors"
+                >
+                  {doc.title}
+                </button>
+              ))}
             </div>
+          )}
 
-            {!selectedDoc && <div className="text-xs text-neutral-500">Select a document.</div>}
+          {!isHubPage && !selectedDoc && <div className="text-xs text-neutral-500">Select a document.</div>}
 
-            {selectedDoc && selectedDoc.headings.length === 0 && (
-              <div className="text-xs text-neutral-500">No sections detected.</div>
-            )}
+          {!isHubPage && selectedDoc && selectedDoc.headings.length === 0 && (
+            <div className="text-xs text-neutral-500">No sections detected.</div>
+          )}
 
-            {selectedDoc && selectedDoc.headings.length > 0 && (
-              <div className="space-y-1">
-                {selectedDoc.headings.map((heading) => {
-                  const isActive = activeHeading !== null && normalizeText(activeHeading) === normalizeText(heading);
+          {!isHubPage && selectedDoc && selectedDoc.headings.length > 0 && (
+            <div className="space-y-1">
+              {selectedDoc.headings.map((heading) => {
+                const isActive = activeHeading !== null && normalizeText(activeHeading) === normalizeText(heading);
                   return (
                     <button
                       key={heading}
@@ -267,7 +296,7 @@ export function DocumentationHub() {
               {selectedDoc?.category ?? 'Documentation'}
             </div>
             <div className="text-sm font-semibold text-neutral-100 truncate">
-              {selectedDoc?.title ?? 'Documentation Hub'}
+              {selectedDoc?.title ?? 'Apparatus Documentation Hub'}
             </div>
           </div>
           {selectedDoc && (
@@ -281,7 +310,41 @@ export function DocumentationHub() {
           {loading && <div className="text-sm text-neutral-500">Loading documentation…</div>}
           {error && !loading && <div className="text-sm text-danger">{error}</div>}
           {!loading && !error && !selectedDoc && (
-            <div className="text-sm text-neutral-500">No documentation available.</div>
+            <div className="max-w-5xl space-y-8">
+              <section className="space-y-2">
+                <h2 className="text-2xl font-semibold text-neutral-100">Apparatus Documentation Hub</h2>
+                <p className="text-sm text-neutral-400">
+                  Browse public documentation by category and jump directly to the page you need.
+                </p>
+              </section>
+
+              {groupedDocs.length === 0 && (
+                <div className="text-sm text-neutral-500">No public documentation available.</div>
+              )}
+
+              {groupedDocs.map((group) => (
+                <section key={group.category} className="space-y-3">
+                  <h3 className="text-xs font-mono uppercase tracking-widest text-neutral-500">
+                    {group.category}
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+                    {group.entries.map((doc) => (
+                      <button
+                        key={doc.id}
+                        type="button"
+                        onClick={() => navigate(`/docs/${doc.id}`)}
+                        className="rounded-sm border border-neutral-800 bg-neutral-900/50 hover:border-neutral-700 hover:bg-neutral-900/80 transition-colors px-4 py-4 min-h-[112px] text-left flex items-center"
+                      >
+                        <div className="space-y-1 min-w-0">
+                          <div className="text-base font-medium text-neutral-100 line-clamp-1">{doc.title}</div>
+                          <div className="text-sm text-neutral-400 line-clamp-1">{doc.excerpt}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
           )}
           {!loading && !error && selectedDoc && (
             <div className="max-w-4xl">
@@ -293,4 +356,3 @@ export function DocumentationHub() {
     </div>
   );
 }
-
