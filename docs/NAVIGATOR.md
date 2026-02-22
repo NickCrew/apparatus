@@ -22,6 +22,8 @@ Welcome! This guide helps you find the right documentation for your needs.
 - **[Tutorial: Live Payload Fuzzer](tutorial-live-payload-fuzzer.md)** — Interactive API & payload testing
 - **[Tutorial: Testing Lab](tutorial-testing-lab.md)** — Unified security testing (k6, Nuclei, Escape Artist)
 - **[Tutorial: Attacker Fingerprinting](tutorial-attacker-fingerprinting.md)** — Real-time threat monitoring & response
+- **[Tutorial: Overview Dashboard](tutorial-overview-dashboard.md)** — Real-time metrics and incident monitoring
+- **[Tutorial: Scenario Builder](tutorial-scenario-builder.md)** — Multi-step automated testing sequences
 
 ### Reference & Architecture
 - **[Architecture Guide](architecture.md)** — System design, component details, performance
@@ -71,6 +73,12 @@ Welcome! This guide helps you find the right documentation for your needs.
 #### Monitor and Respond to Attacks
 → **[Tutorial: Attacker Fingerprinting](tutorial-attacker-fingerprinting.md)**
 
+#### View System Health and Incidents
+→ **[Tutorial: Overview Dashboard](tutorial-overview-dashboard.md)**
+
+#### Build and Run Multi-Step Tests
+→ **[Tutorial: Scenario Builder](tutorial-scenario-builder.md)**
+
 #### Troubleshoot Issues
 → **[Quick Reference](quick-reference.md)** → Troubleshooting section
 
@@ -102,6 +110,8 @@ docs/
 ├── tutorial-live-payload-fuzzer.md ........ Interactive API & payload testing
 ├── tutorial-testing-lab.md ................ Unified security testing hub
 ├── tutorial-attacker-fingerprinting.md .... Real-time threat monitoring
+├── tutorial-overview-dashboard.md ......... System health & incident monitoring
+├── tutorial-scenario-builder.md ........... Multi-step automation sequences
 │
 └── DOCUMENTATION_ROADMAP.md .............. Future documentation plans
 ```
@@ -218,6 +228,8 @@ docs/
 | tutorial-live-payload-fuzzer.md | API/payload testing | Security testers | ✅ New |
 | tutorial-testing-lab.md | Unified testing (k6/Nuclei) | QA/Security engineers | ✅ New |
 | tutorial-attacker-fingerprinting.md | Threat monitoring & response | SOC/Incident response | ✅ New |
+| tutorial-overview-dashboard.md | System health & incidents | All users | ✅ New |
+| tutorial-scenario-builder.md | Multi-step automation | Advanced users | ✅ New |
 
 ---
 

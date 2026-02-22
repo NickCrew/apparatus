@@ -32,6 +32,11 @@ const categoryMap = {
   'tutorial-monitoring.md': 'Tutorials',
   'tutorial-cli.md': 'Tutorials',
   'tutorial-webhooks.md': 'Tutorials',
+  'tutorial-live-payload-fuzzer.md': 'Tutorials',
+  'tutorial-testing-lab.md': 'Tutorials',
+  'tutorial-attacker-fingerprinting.md': 'Tutorials',
+  'tutorial-overview-dashboard.md': 'Tutorials',
+  'tutorial-scenario-builder.md': 'Tutorials',
   // DOCUMENTATION_ROADMAP.md - internal/developer only, excluded from user-facing docs
 };
 
