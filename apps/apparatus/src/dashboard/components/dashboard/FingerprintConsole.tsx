@@ -202,8 +202,8 @@ export function FingerprintConsole() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-[620px]">
-        <Card variant="panel" glow="danger" className="xl:col-span-7 min-h-0 flex flex-col">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 h-[620px] min-h-0">
+        <Card variant="panel" glow="danger" className="xl:col-span-7 h-full min-h-0 flex flex-col">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm uppercase tracking-wider flex items-center gap-2">
               <Flame className="h-4 w-4 text-danger-400" />
@@ -293,8 +293,8 @@ export function FingerprintConsole() {
           </CardContent>
         </Card>
 
-        <div className="xl:col-span-5 grid grid-rows-2 gap-4 min-h-0">
-          <Card variant="panel" glow="warning" className="min-h-0 flex flex-col">
+        <div className="xl:col-span-5 grid grid-rows-2 gap-4 h-full min-h-0">
+          <Card variant="panel" glow="warning" className="h-full min-h-0 flex flex-col">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm uppercase tracking-wider">Kill Chain Timeline</CardTitle>
             </CardHeader>
@@ -331,7 +331,7 @@ export function FingerprintConsole() {
             </CardContent>
           </Card>
 
-          <Card variant="panel" glow="danger" className="min-h-0 flex flex-col">
+          <Card variant="panel" glow="danger" className="h-full min-h-0 flex flex-col">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm uppercase tracking-wider">Risk Posture</CardTitle>
             </CardHeader>

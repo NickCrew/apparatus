@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, ShieldAlert, Square, Play, XCircle, Gauge, Activity } from 'lucide-react';
+import { Bot, ShieldAlert, Square, Play, Pause, XCircle, Gauge, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -48,15 +48,26 @@ export function AutopilotConsole() {
     'delay',
   ]);
   const thoughtStreamRef = useRef<HTMLDivElement | null>(null);
+  const actionLogRef = useRef<HTMLDivElement | null>(null);
+  const [thoughtAutoScroll, setThoughtAutoScroll] = useState(true);
+  const [actionAutoScroll, setActionAutoScroll] = useState(true);
 
   const thoughts = session?.thoughts || [];
   const actions = session?.actions || [];
 
   useEffect(() => {
+    if (!thoughtAutoScroll) return;
     const scroller = thoughtStreamRef.current;
     if (!scroller) return;
     scroller.scrollTop = scroller.scrollHeight;
-  }, [thoughts.length]);
+  }, [thoughtAutoScroll, thoughts.length]);
+
+  useEffect(() => {
+    if (!actionAutoScroll) return;
+    const scroller = actionLogRef.current;
+    if (!scroller) return;
+    scroller.scrollTop = scroller.scrollHeight;
+  }, [actionAutoScroll, actions.length]);
 
   const headerSummary = useMemo(() => {
     const status = session?.state || 'idle';
@@ -232,10 +243,32 @@ export function AutopilotConsole() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Card variant="panel" glow="primary" className="xl:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary-400" />
-              Live Thought Stream
-            </CardTitle>
+            <div className="flex items-start justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary-400" />
+                Live Thought Stream
+              </CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setThoughtAutoScroll((current) => !current)}
+                className="h-7 px-2 text-[10px] font-mono uppercase tracking-wider"
+                aria-pressed={thoughtAutoScroll}
+              >
+                {thoughtAutoScroll ? (
+                  <>
+                    <Pause className="mr-1 h-3 w-3" />
+                    Stop Auto-Scrolling
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-1 h-3 w-3" />
+                    Resume Auto-Scrolling
+                  </>
+                )}
+              </Button>
+            </div>
             <CardDescription>Internal reasoning trace from the autonomous loop.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -260,14 +293,36 @@ export function AutopilotConsole() {
 
         <Card variant="panel" glow="primary">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gauge className="h-4 w-4 text-warning-400" />
-              Action Log
-            </CardTitle>
+            <div className="flex items-start justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <Gauge className="h-4 w-4 text-warning-400" />
+                Action Log
+              </CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setActionAutoScroll((current) => !current)}
+                className="h-7 px-2 text-[10px] font-mono uppercase tracking-wider"
+                aria-pressed={actionAutoScroll}
+              >
+                {actionAutoScroll ? (
+                  <>
+                    <Pause className="mr-1 h-3 w-3" />
+                    Stop Auto-Scrolling
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-1 h-3 w-3" />
+                    Resume Auto-Scrolling
+                  </>
+                )}
+              </Button>
+            </div>
             <CardDescription>Tools executed during this mission.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[320px] overflow-y-auto space-y-2 pr-1">
+            <div ref={actionLogRef} className="h-[320px] overflow-y-auto space-y-2 pr-1">
               {actions.length === 0 && (
                 <div className="text-xs text-neutral-600 font-mono">No tool executions yet.</div>
               )}
