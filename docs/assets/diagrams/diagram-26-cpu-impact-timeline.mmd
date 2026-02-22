@@ -1,0 +1,9 @@
+flowchart LR
+    Baseline["Baseline\nlow lag, stable latency"] --> Spike["CPU Spike Active\nlag rises, latency/error rise"]
+    Spike --> Recovery["Spike Ends\nmetrics normalize"]
+    Recovery --> Validate["Validate Recovery\ncompare against baseline"]
+
+    style Baseline fill:#1f4a45
+    style Spike fill:#5a2f45
+    style Recovery fill:#5f4a1d
+    style Validate fill:#2b4265

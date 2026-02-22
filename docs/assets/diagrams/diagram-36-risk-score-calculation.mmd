@@ -1,0 +1,11 @@
+flowchart LR
+    Factors["Risk Inputs\nfrequency, success rate, payload severity"] --> Reputation["Reputation + category\nknown bot/internal/external"]
+    Reputation --> Modifiers["Behavior Modifiers\ntarpit effect + geo anomaly"]
+    Modifiers --> Score["Weighted Score\n0-100"]
+    Score --> Band["Risk Band\ncritical/high/medium/low/minimal"]
+
+    style Factors fill:#2b4265
+    style Reputation fill:#1f365a
+    style Modifiers fill:#5f4a1d
+    style Score fill:#5a2f45
+    style Band fill:#1f4a45

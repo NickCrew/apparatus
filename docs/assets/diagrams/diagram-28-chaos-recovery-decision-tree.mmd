@@ -1,0 +1,13 @@
+flowchart LR
+    EndSpike["Chaos Spike Ends"] --> Metrics{"Metrics back to baseline?"}
+    Metrics -->|Yes| Healthy["Recovery successful\ncontinue monitoring"]
+    Metrics -->|No| Check{"Another test still running?"}
+    Check -->|Yes| Wait["Wait for active test to finish"]
+    Check -->|No| Restart["Investigate + restart if needed"]
+
+    style EndSpike fill:#2b4265
+    style Metrics fill:#1f365a
+    style Healthy fill:#1f4a45
+    style Check fill:#1f365a
+    style Wait fill:#5f4a1d
+    style Restart fill:#5a2f45

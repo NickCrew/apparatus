@@ -1,0 +1,11 @@
+flowchart LR
+    Trigger["Run Scenario\nPOST /scenarios/{id}/run"] --> Queue["Execution Queued\nstatus=running"]
+    Queue --> StepRun["Steps Execute\nin configured order"]
+    StepRun --> Update["Status + SSE updates\nprogress and results"]
+    Update --> Complete["Terminal State\ncompleted/failed/stopped"]
+
+    style Trigger fill:#2b4265
+    style Queue fill:#1f365a
+    style StepRun fill:#5f4a1d
+    style Update fill:#4a2f56
+    style Complete fill:#1f4a45

@@ -1,0 +1,13 @@
+flowchart LR
+    Req["Incoming Requests"] --> Young["Young Gen\nnew allocations"]
+    Young --> GCMinor["Minor GC\ncopy live objects"]
+    GCMinor --> Old["Old Gen\nlong-lived objects"]
+    Old --> GCMajor["Major GC\nreclaim old space"]
+    GCMajor --> Lag["GC pauses affect\nevent loop lag"]
+
+    style Req fill:#2b4265
+    style Young fill:#1f4a45
+    style GCMinor fill:#1f365a
+    style Old fill:#5f4a1d
+    style GCMajor fill:#4a2f56
+    style Lag fill:#5a2f45

@@ -1,0 +1,12 @@
+flowchart LR
+    Step1["Step 1\nPrep target"] --> Step2["Step 2\nLoad generation"]
+    Step1 --> Step3["Step 3\nDefense mutation"]
+    Step2 --> Step4["Step 4\nValidation probes"]
+    Step3 --> Step4
+    Step4 --> Step5["Step 5\nReport + cleanup"]
+
+    style Step1 fill:#2b4265
+    style Step2 fill:#1f365a
+    style Step3 fill:#4a2f56
+    style Step4 fill:#5f4a1d
+    style Step5 fill:#1f4a45

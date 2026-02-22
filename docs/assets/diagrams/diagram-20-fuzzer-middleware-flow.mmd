@@ -1,0 +1,17 @@
+flowchart LR
+    Input["Fuzzer Request\nmethod/path/body"] --> App["Apparatus Ingress"]
+    App --> MTD["MTD Prefix Check"]
+    MTD --> Deception["Deception + Tarpit"]
+    Deception --> WAF{"WAF Rule Match?"}
+    WAF -->|Yes| Block["Blocked Response\n403 + blocked=true"]
+    WAF -->|No| Handler["Route Handler Executes"]
+    Handler --> Output["Result Classification\npass, block, or timeout"]
+
+    style Input fill:#2b4265
+    style App fill:#1f365a
+    style MTD fill:#4a2f56
+    style Deception fill:#5f4a1d
+    style WAF fill:#1f365a
+    style Block fill:#5a2f45
+    style Handler fill:#1f4a45
+    style Output fill:#2b4265

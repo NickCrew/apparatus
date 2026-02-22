@@ -1,0 +1,11 @@
+flowchart LR
+    Base["Baseline Throughput\n1.0x"] --> Mid["Middleware tuning\n+20-30%"]
+    Mid --> Heap["Node heap tuning\n+40-50%"]
+    Heap --> Async["Async + connection optimizations\n+10-40%"]
+    Async --> Final["Combined impact\n5x-10x potential"]
+
+    style Base fill:#2b4265
+    style Mid fill:#1f365a
+    style Heap fill:#5f4a1d
+    style Async fill:#4a2f56
+    style Final fill:#1f4a45

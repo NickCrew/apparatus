@@ -1,0 +1,18 @@
+flowchart LR
+    Sent["Payloads Sent"] --> DefCheck{"Blocked by defense?"}
+    DefCheck -->|Yes| Blocked["Count as blocked"]
+    DefCheck -->|No| Passed["Count as bypass"]
+    Blocked --> Rate["Success Rate = bypasses / total payloads"]
+    Passed --> Rate
+    Rate --> Decision{"Rate threshold exceeded?"}
+    Decision -->|Yes| Escalate["Escalate + patch rules"]
+    Decision -->|No| Monitor["Continue campaign"]
+
+    style Sent fill:#2b4265
+    style DefCheck fill:#1f365a
+    style Blocked fill:#1f4a45
+    style Passed fill:#5a2f45
+    style Rate fill:#5f4a1d
+    style Decision fill:#1f365a
+    style Escalate fill:#5a2f45
+    style Monitor fill:#1f4a45

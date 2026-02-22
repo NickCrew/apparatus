@@ -1,0 +1,14 @@
+flowchart LR
+    Assess["Assess Severity\nerror rate + latency trend"] --> Investigate["Investigate Source\nattacker profile + bypasses"]
+    Investigate --> Respond{"Bypass above threshold?"}
+    Respond -->|Yes| Blackhole["Blackhole + patch rules"]
+    Respond -->|No| Tarpit["Tarpit + monitor"]
+    Blackhole --> Verify["Verify stabilization\nand document incident"]
+    Tarpit --> Verify
+
+    style Assess fill:#2b4265
+    style Investigate fill:#1f365a
+    style Respond fill:#1f365a
+    style Blackhole fill:#5a2f45
+    style Tarpit fill:#5f4a1d
+    style Verify fill:#1f4a45

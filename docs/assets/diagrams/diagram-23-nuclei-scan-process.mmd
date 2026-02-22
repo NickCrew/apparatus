@@ -1,0 +1,13 @@
+flowchart LR
+    Select["Select Templates\nHeaders/CVE/misconfig"] --> Execute["Execute Scan\nAgainst target host"]
+    Execute --> Parse["Parse Findings\nSeverity + evidence"]
+    Parse --> Severity{"Severity Level"}
+    Severity -->|Critical/High| Urgent["Fix before production\nand rerun scan"]
+    Severity -->|Medium/Low/Info| Track["Track + schedule remediation"]
+
+    style Select fill:#2b4265
+    style Execute fill:#1f365a
+    style Parse fill:#4a2f56
+    style Severity fill:#1f365a
+    style Urgent fill:#5a2f45
+    style Track fill:#1f4a45

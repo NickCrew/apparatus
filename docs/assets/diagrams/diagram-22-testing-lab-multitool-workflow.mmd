@@ -1,0 +1,13 @@
+flowchart LR
+    Start["Assessment Start"] --> K6["k6 Load Test\nBaseline capacity"]
+    K6 --> Nuclei["Nuclei Scan\nTemplate-driven findings"]
+    Nuclei --> Fuzzer["Live Payload Fuzzer\nEndpoint-specific validation"]
+    Fuzzer --> Escape["Escape Artist\nEgress validation"]
+    Escape --> Report["Consolidated Report\nPerf + security + egress"]
+
+    style Start fill:#2b4265
+    style K6 fill:#1f365a
+    style Nuclei fill:#5f4a1d
+    style Fuzzer fill:#4a2f56
+    style Escape fill:#1f4a45
+    style Report fill:#2b4265

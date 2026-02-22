@@ -1,0 +1,11 @@
+flowchart LR
+    Setup["Setup\nSelect scenario + target"] --> RampUp["Ramp Up\nVirtual users increase"]
+    RampUp --> Peak["Peak Load\nSteady pressure window"]
+    Peak --> RampDown["Ramp Down\nUsers decrease"]
+    RampDown --> Results["Results\nRPS, latency, errors"]
+
+    style Setup fill:#2b4265
+    style RampUp fill:#1f365a
+    style Peak fill:#5f4a1d
+    style RampDown fill:#4a2f56
+    style Results fill:#1f4a45

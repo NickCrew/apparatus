@@ -1,0 +1,11 @@
+flowchart LR
+    M0["0-512MB\nminimal impact"] --> M1["512-1024MB\nwatch latency + GC"]
+    M1 --> M2["1024-2048MB\nincreased pressure"]
+    M2 --> M3["2048-4096MB\nhigh OOM risk"]
+    M3 --> Clear["Clear Allocation\nreturn to baseline"]
+
+    style M0 fill:#1f4a45
+    style M1 fill:#2b4265
+    style M2 fill:#5f4a1d
+    style M3 fill:#5a2f45
+    style Clear fill:#1f365a

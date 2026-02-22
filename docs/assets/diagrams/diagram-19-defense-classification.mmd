@@ -1,0 +1,15 @@
+flowchart LR
+    Request["Payload Sent"] --> Status{"Status + Blocked?"}
+    Status -->|403 + true| Blocked["Blocked by Defense\nExpected for malicious payload"]
+    Status -->|200 + false| Evaluate{"Payload benign?"}
+    Evaluate -->|Yes| Benign["Allowed Request\nExpected behavior"]
+    Evaluate -->|No| Bypass["Possible Defense Bypass\nInvestigate immediately"]
+    Status -->|Latency > 2000ms| Tarpit["Likely tarpit delay\nor heavy backend work"]
+
+    style Request fill:#2b4265
+    style Status fill:#1f365a
+    style Blocked fill:#1f4a45
+    style Evaluate fill:#5f4a1d
+    style Benign fill:#1f4a45
+    style Bypass fill:#5a2f45
+    style Tarpit fill:#4a2f56

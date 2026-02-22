@@ -1,0 +1,11 @@
+flowchart LR
+    Input["Observe Metrics"] --> IO["High latency + low CPU\nI/O bottleneck"]
+    Input --> CPU["High latency + high CPU\nCPU bottleneck"]
+    Input --> Mem["High latency + high memory\nMemory/GC bottleneck"]
+    Input --> Exhaust["Errors rise at load\nResource exhaustion"]
+
+    style Input fill:#2b4265
+    style IO fill:#1f4a45
+    style CPU fill:#5f4a1d
+    style Mem fill:#4a2f56
+    style Exhaust fill:#5a2f45

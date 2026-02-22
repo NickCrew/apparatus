@@ -1,0 +1,11 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Stable
+    Stable: Stable\nlag < 50ms
+    Elevated: Elevated\nlag 50-200ms
+    Critical: Critical\nlag > 200ms
+
+    Stable --> Elevated: lag rises above 50ms
+    Elevated --> Critical: lag rises above 200ms
+    Elevated --> Stable: lag drops below 50ms
+    Critical --> Elevated: lag drops below 200ms

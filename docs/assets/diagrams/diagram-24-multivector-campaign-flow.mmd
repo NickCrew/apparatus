@@ -1,0 +1,11 @@
+flowchart LR
+    Recon["Phase 1\nReconnaissance"] --> Exploit["Phase 2\nXSS + SQLi + payload testing"]
+    Exploit --> Persist["Phase 3\nAuth + persistence checks"]
+    Persist --> Escalate["Phase 4\nChaos + stress conditions"]
+    Escalate --> Analyze["Phase 5\nCorrelate findings + report"]
+
+    style Recon fill:#2b4265
+    style Exploit fill:#5a2f45
+    style Persist fill:#1f4a45
+    style Escalate fill:#5f4a1d
+    style Analyze fill:#1f365a

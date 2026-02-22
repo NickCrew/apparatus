@@ -1,0 +1,17 @@
+flowchart LR
+    Detect["Detected Attacker"] --> Risk{"Risk >= 75?"}
+    Risk -->|Yes| Bypass{"Any bypass observed?"}
+    Risk -->|No| Monitor["Monitor + document"]
+    Bypass -->|Yes| Blackhole["Blackhole immediately"]
+    Bypass -->|No| Tarpit["Tarpit and collect intel"]
+    Blackhole --> Review["Review payloads\nupdate defenses"]
+    Tarpit --> Review
+    Monitor --> Review
+
+    style Detect fill:#2b4265
+    style Risk fill:#1f365a
+    style Bypass fill:#1f365a
+    style Blackhole fill:#5a2f45
+    style Tarpit fill:#5f4a1d
+    style Monitor fill:#1f4a45
+    style Review fill:#4a2f56
