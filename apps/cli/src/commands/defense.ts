@@ -475,4 +475,109 @@ export function registerDefenseCommands(program: Command, getClient: () => Appar
         process.exit(1);
       }
     });
+
+  // Blackhole commands
+  const blackhole = defense
+    .command('blackhole')
+    .description('Blackhole defense - hard-drop all traffic from IP');
+
+  blackhole
+    .command('list')
+    .alias('ls')
+    .description('List IPs in blackhole')
+    .action(async () => {
+      const client = getClient();
+      const spin = output.spinner('Fetching blackhole status...');
+      spin.start();
+
+      try {
+        const res = await fetch(`${client.getBaseUrl()}/blackhole`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const result = await res.json() as { ips: Array<{ ip: string; timestamp: string; reason?: string }> };
+
+        spin.stop();
+        output.header(`Blackhole Status (${result.ips?.length || 0} blocked IPs)`);
+
+        if (!result.ips || result.ips.length === 0) {
+          output.info('No IPs currently blocked');
+          return;
+        }
+
+        output.subheader('\nBlocked IPs:');
+        const rows = result.ips.map(entry => [
+          chalk.red('●'),
+          entry.ip,
+          new Date(entry.timestamp).toLocaleString(),
+          entry.reason || '-',
+        ]);
+        output.printTable(['', 'IP Address', 'Blocked At', 'Reason'], rows);
+      } catch (err) {
+        spin.stop();
+        output.error(`Failed to fetch blackhole status: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
+
+  blackhole
+    .command('add <ip>')
+    .description('Add IP to blackhole (drop all traffic)')
+    .option('-r, --reason <reason>', 'Reason for blocking')
+    .action(async (ip, options) => {
+      const client = getClient();
+      const spin = output.spinner(`Adding ${ip} to blackhole...`);
+      spin.start();
+
+      try {
+        const res = await fetch(`${client.getBaseUrl()}/blackhole`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ip,
+            reason: options.reason,
+          }),
+        });
+
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const result = await res.json() as { status: string; ip: string };
+
+        spin.stop();
+        output.success(`IP blocked: ${result.ip}`);
+        output.labelValue('Status', result.status);
+      } catch (err) {
+        spin.stop();
+        output.error(`Failed to add IP to blackhole: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
+
+  blackhole
+    .command('release [ip]')
+    .description('Release IP from blackhole (or all if no IP specified)')
+    .action(async (ip) => {
+      const client = getClient();
+      const spin = output.spinner(ip ? `Releasing ${ip}...` : 'Releasing all IPs...');
+      spin.start();
+
+      try {
+        const res = await fetch(`${client.getBaseUrl()}/blackhole/release`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ip }),
+        });
+
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const result = await res.json() as { status: string; released?: number };
+
+        spin.stop();
+        if (result.status === 'released') {
+          output.success(`Released IP: ${ip}`);
+        } else {
+          output.success(`Released ${result.released || 'all'} IP(s)`);
+        }
+      } catch (err) {
+        spin.stop();
+        output.error(`Failed to release IP: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
 }

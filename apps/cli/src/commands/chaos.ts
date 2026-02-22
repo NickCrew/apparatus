@@ -153,4 +153,46 @@ export function registerChaosCommands(program: Command, getClient: () => Apparat
         process.exit(1);
       }
     });
+
+  // Chaos status
+  chaos
+    .command('status')
+    .description('Get status of active chaos experiments')
+    .action(async () => {
+      const client = getClient();
+      const spin = output.spinner('Fetching chaos status...');
+      spin.start();
+
+      try {
+        const res = await fetch(`${client.getBaseUrl()}/chaos/status`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const result = await res.json() as {
+          active: boolean;
+          experiments?: Array<{ type: string; duration: number; startTime: string; config?: Record<string, unknown> }>;
+          count?: number;
+        };
+
+        spin.stop();
+        output.header('Chaos Experiments Status');
+        output.labelValue('Active Experiments', result.count || result.experiments?.length || 0);
+
+        if (!result.experiments || result.experiments.length === 0) {
+          output.info('No active chaos experiments');
+          return;
+        }
+
+        output.subheader('\nActive Experiments:');
+        const rows = result.experiments.map((exp, idx) => [
+          idx + 1,
+          exp.type,
+          `${exp.duration}ms`,
+          new Date(exp.startTime).toLocaleTimeString(),
+        ]);
+        output.printTable(['#', 'Type', 'Duration', 'Started'], rows);
+      } catch (err) {
+        spin.stop();
+        output.error(`Failed to fetch chaos status: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
 }

@@ -163,4 +163,64 @@ export function registerIdentityCommands(program: Command, getClient: () => Appa
         process.exit(1);
       }
     });
+
+  identity
+    .command('forge')
+    .description('Forge a malicious JWT token for security testing')
+    .option('-s, --sub <subject>', 'Subject claim')
+    .option('-a, --aud <audience>', 'Audience claim')
+    .option('-e, --exp <seconds>', 'Expiration time in seconds (default: 3600)')
+    .option('-c, --claims <json>', 'Custom claims as JSON object')
+    .option('--alg <algorithm>', 'Algorithm (default: HS256)', 'HS256')
+    .option('--admin', 'Add admin role claim')
+    .option('--elevated', 'Add elevated privileges claim')
+    .addHelpText('after', `
+Examples:
+  $ apparatus identity forge --sub attacker --aud myapp
+  $ apparatus identity forge --sub admin --admin --elevated
+  $ apparatus identity forge --claims '{"role":"admin","org":"hack"}'`)
+    .action(async (options) => {
+      const client = getClient();
+      const spin = output.spinner('Forging JWT token...');
+      spin.start();
+
+      try {
+        const claims = options.claims ? JSON.parse(options.claims) : {};
+        if (options.admin) claims.role = 'admin';
+        if (options.elevated) claims.privileges = 'elevated';
+
+        const res = await fetch(`${client.getBaseUrl()}/auth/forge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sub: options.sub || 'attacker',
+            aud: options.aud,
+            exp: Math.floor(Date.now() / 1000) + (parseInt(options.exp) || 3600),
+            alg: options.alg,
+            claims,
+          }),
+        });
+
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const result = await res.json() as { token: string; decoded?: Record<string, unknown> };
+
+        spin.stop();
+        output.header('Forged JWT Token');
+        output.warning('⚠️  This is a test token for authorized security testing only');
+
+        output.subheader('\nToken:');
+        console.log(chalk.cyan(result.token));
+
+        if (result.decoded) {
+          output.subheader('\nDecoded Payload:');
+          output.printJson(result.decoded);
+        }
+
+        output.info('\nUse this token in the Authorization header: Bearer <token>');
+      } catch (err) {
+        spin.stop();
+        output.error(`Token forging failed: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
 }
