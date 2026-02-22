@@ -227,3 +227,53 @@ export function formatHealth(status: string): string {
       return chalk.gray('? unknown');
   }
 }
+
+/**
+ * Handle command errors with consistent formatting
+ */
+export function handleError(error: unknown, context: string): never {
+  if (error instanceof Error) {
+    error(`${context}: ${error.message}`);
+  } else if (typeof error === 'string') {
+    error(`${context}: ${error}`);
+  } else {
+    error(`${context}: ${JSON.stringify(error)}`);
+  }
+  process.exit(1);
+}
+
+/**
+ * Confirm destructive action with user
+ */
+export async function confirm(message: string, defaultYes = false): Promise<boolean> {
+  const readline = await import('readline');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    const prompt = defaultYes ? `${message} (yes/no) [yes]: ` : `${message} (yes/no) [no]: `;
+    rl.question(prompt, (answer) => {
+      rl.close();
+      const normalized = answer.toLowerCase().trim();
+      const isYes = normalized === 'yes' || normalized === 'y';
+      const isNo = normalized === 'no' || normalized === 'n';
+
+      if (isYes) resolve(true);
+      else if (isNo) resolve(false);
+      else resolve(defaultYes);
+    });
+  });
+}
+
+/**
+ * Output data as JSON with proper formatting
+ */
+export function outputJson(data: unknown, options?: { jsonOnly?: boolean }): void {
+  if (options?.jsonOnly) {
+    console.log(JSON.stringify(data));
+  } else {
+    console.log(JSON.stringify(data, null, 2));
+  }
+}

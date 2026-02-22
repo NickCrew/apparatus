@@ -6,6 +6,7 @@
 import type { Command } from 'commander';
 import type { ApparatusClient } from '@apparatus/client';
 import chalk from 'chalk';
+import { z } from 'zod';
 import * as output from '../output.js';
 
 export function registerDefenseCommands(program: Command, getClient: () => ApparatusClient): void {
@@ -481,6 +482,9 @@ export function registerDefenseCommands(program: Command, getClient: () => Appar
     .command('blackhole')
     .description('Blackhole defense - hard-drop all traffic from IP');
 
+  // IP/CIDR validation schema
+  const ipSchema = z.string().ip({ version: 4 }).or(z.string().ip({ version: 6 }));
+
   blackhole
     .command('list')
     .alias('ls')
@@ -513,8 +517,7 @@ export function registerDefenseCommands(program: Command, getClient: () => Appar
         output.printTable(['', 'IP Address', 'Blocked At', 'Reason'], rows);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to fetch blackhole status: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to fetch blackhole status');
       }
     });
 
@@ -524,6 +527,15 @@ export function registerDefenseCommands(program: Command, getClient: () => Appar
     .option('-r, --reason <reason>', 'Reason for blocking')
     .action(async (ip, options) => {
       const client = getClient();
+
+      // Validate IP format
+      try {
+        ipSchema.parse(ip);
+      } catch (err) {
+        output.error(`Invalid IP address: ${ip}`);
+        process.exit(1);
+      }
+
       const spin = output.spinner(`Adding ${ip} to blackhole...`);
       spin.start();
 
@@ -545,16 +557,39 @@ export function registerDefenseCommands(program: Command, getClient: () => Appar
         output.labelValue('Status', result.status);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to add IP to blackhole: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to add IP to blackhole');
       }
     });
 
   blackhole
     .command('release [ip]')
     .description('Release IP from blackhole (or all if no IP specified)')
-    .action(async (ip) => {
+    .option('-f, --force', 'Skip confirmation prompt')
+    .action(async (ip, options) => {
       const client = getClient();
+
+      // Validate IP if provided
+      if (ip) {
+        try {
+          ipSchema.parse(ip);
+        } catch (err) {
+          output.error(`Invalid IP address: ${ip}`);
+          process.exit(1);
+        }
+      }
+
+      // Confirm destructive operation
+      if (!options.force) {
+        const confirmed = await output.confirm(
+          ip ? `Release IP ${ip} from blackhole?` : 'Release ALL IPs from blackhole? This cannot be undone.',
+          false
+        );
+        if (!confirmed) {
+          output.info('Release cancelled');
+          return;
+        }
+      }
+
       const spin = output.spinner(ip ? `Releasing ${ip}...` : 'Releasing all IPs...');
       spin.start();
 
@@ -576,8 +611,7 @@ export function registerDefenseCommands(program: Command, getClient: () => Appar
         }
       } catch (err) {
         spin.stop();
-        output.error(`Failed to release IP: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to release IP');
       }
     });
 }

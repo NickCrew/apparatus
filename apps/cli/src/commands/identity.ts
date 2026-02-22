@@ -6,6 +6,7 @@
 import type { Command } from 'commander';
 import type { ApparatusClient } from '@apparatus/client';
 import chalk from 'chalk';
+import { z } from 'zod';
 import * as output from '../output.js';
 
 export function registerIdentityCommands(program: Command, getClient: () => ApparatusClient): void {
@@ -164,6 +165,9 @@ export function registerIdentityCommands(program: Command, getClient: () => Appa
       }
     });
 
+  // Schema for validating custom claims
+  const claimsSchema = z.record(z.string(), z.unknown());
+
   identity
     .command('forge')
     .description('Forge a malicious JWT token for security testing')
@@ -174,18 +178,49 @@ export function registerIdentityCommands(program: Command, getClient: () => Appa
     .option('--alg <algorithm>', 'Algorithm (default: HS256)', 'HS256')
     .option('--admin', 'Add admin role claim')
     .option('--elevated', 'Add elevated privileges claim')
+    .option('--output <file>', 'Write token to file instead of stdout')
+    .option('--json', 'Output as JSON only (suppress warnings)')
     .addHelpText('after', `
 Examples:
   $ apparatus identity forge --sub attacker --aud myapp
   $ apparatus identity forge --sub admin --admin --elevated
-  $ apparatus identity forge --claims '{"role":"admin","org":"hack"}'`)
+  $ apparatus identity forge --claims '{"role":"admin","org":"hack"}'
+
+SECURITY WARNING: Forged tokens are for authorized security testing only.
+Misuse of this command may be illegal. Only use in authorized environments.`)
     .action(async (options) => {
       const client = getClient();
       const spin = output.spinner('Forging JWT token...');
       spin.start();
 
       try {
-        const claims = options.claims ? JSON.parse(options.claims) : {};
+        // Parse and validate custom claims
+        let claims: Record<string, unknown> = {};
+        if (options.claims) {
+          try {
+            const parsed = JSON.parse(options.claims);
+            claims = claimsSchema.parse(parsed);
+          } catch (err) {
+            spin.stop();
+            if (err instanceof z.ZodError) {
+              output.error(`Invalid claims format: ${err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`);
+            } else if (err instanceof SyntaxError) {
+              output.error(`Invalid JSON in --claims: ${err.message}`);
+            } else {
+              output.error(`Failed to parse claims: ${(err as Error).message}`);
+            }
+            process.exit(1);
+          }
+        }
+
+        // Validate subject is provided
+        if (!options.sub && !options.admin) {
+          spin.stop();
+          output.error('Subject (--sub) must be specified or use --admin flag');
+          process.exit(1);
+        }
+
+        // Add role/privilege claims
         if (options.admin) claims.role = 'admin';
         if (options.elevated) claims.privileges = 'elevated';
 
@@ -205,22 +240,34 @@ Examples:
         const result = await res.json() as { token: string; decoded?: Record<string, unknown> };
 
         spin.stop();
-        output.header('Forged JWT Token');
-        output.warning('⚠️  This is a test token for authorized security testing only');
 
-        output.subheader('\nToken:');
-        console.log(chalk.cyan(result.token));
+        if (options.json) {
+          output.outputJson({ token: result.token, decoded: result.decoded });
+        } else {
+          output.header('Forged JWT Token');
+          output.warning('⚠️  SECURITY WARNING: This token is for authorized testing only');
+          output.warning('⚠️  Misuse may be illegal. Only use in authorized environments.');
 
-        if (result.decoded) {
-          output.subheader('\nDecoded Payload:');
-          output.printJson(result.decoded);
+          if (options.output) {
+            const fs = await import('fs/promises');
+            await fs.writeFile(options.output, result.token, 'utf-8');
+            output.success(`Token written to: ${options.output}`);
+            output.info('Keep this file secure and do not commit to version control');
+          } else {
+            output.subheader('\nToken:');
+            console.log(chalk.cyan(result.token));
+            output.info('Use this token in the Authorization header: Bearer <token>');
+            output.warning('⚠️  Token displayed in plaintext. Ensure terminal history is secure.');
+          }
+
+          if (result.decoded) {
+            output.subheader('\nDecoded Payload:');
+            output.printJson(result.decoded);
+          }
         }
-
-        output.info('\nUse this token in the Authorization header: Bearer <token>');
       } catch (err) {
         spin.stop();
-        output.error(`Token forging failed: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Token forging failed');
       }
     });
 }

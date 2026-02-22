@@ -6,6 +6,7 @@
 import type { Command } from 'commander';
 import type { ApparatusClient } from '@apparatus/client';
 import chalk from 'chalk';
+import { z } from 'zod';
 import * as output from '../output.js';
 
 export function registerTrafficCommands(program: Command, getClient: () => ApparatusClient): void {
@@ -16,7 +17,8 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
   traffic
     .command('status')
     .description('Get ghost traffic status')
-    .action(async () => {
+    .option('--json', 'Output as JSON')
+    .action(async (options) => {
       const client = getClient();
       const spin = output.spinner('Getting status...');
       spin.start();
@@ -25,32 +27,35 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
         const status = await client.traffic.status();
         spin.stop();
 
-        output.header('Ghost Traffic Status');
-        output.printKeyValue({
-          Running: status.running ? chalk.green('yes') : chalk.gray('no'),
-        });
-
-        if (status.config) {
-          output.subheader('\nConfiguration:');
+        if (options.json) {
+          output.outputJson(status);
+        } else {
+          output.header('Ghost Traffic Status');
           output.printKeyValue({
-            RPS: status.config.rps,
-            Duration: status.config.duration ? `${status.config.duration}ms` : 'unlimited',
-            Endpoints: status.config.endpoints?.join(', ') || 'default',
+            Running: status.running ? chalk.green('yes') : chalk.gray('no'),
           });
-        }
 
-        if (status.stats) {
-          output.subheader('\nStatistics:');
-          output.printKeyValue({
-            'Requests Sent': status.stats.requestsSent,
-            Errors: status.stats.errors,
-            'Started At': new Date(status.stats.startedAt).toLocaleString(),
-          });
+          if (status.config) {
+            output.subheader('\nConfiguration:');
+            output.printKeyValue({
+              RPS: status.config.rps,
+              Duration: status.config.duration ? `${status.config.duration}ms` : 'unlimited',
+              Endpoints: status.config.endpoints?.join(', ') || 'default',
+            });
+          }
+
+          if (status.stats) {
+            output.subheader('\nStatistics:');
+            output.printKeyValue({
+              'Requests Sent': status.stats.requestsSent,
+              Errors: status.stats.errors,
+              'Started At': new Date(status.stats.startedAt).toLocaleString(),
+            });
+          }
         }
       } catch (err) {
         spin.stop();
-        output.error(`Failed to get status: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to get status');
       }
     });
 
@@ -151,7 +156,8 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
     .command('list')
     .alias('ls')
     .description('List all ghost instances')
-    .action(async () => {
+    .option('--json', 'Output as JSON')
+    .action(async (options) => {
       const client = getClient();
       const spin = output.spinner('Fetching ghost instances...');
       spin.start();
@@ -162,25 +168,29 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
         const result = await res.json() as { ghosts?: Array<{ id: string; name: string; status: string; rps?: number; createdAt?: string }> };
 
         spin.stop();
-        output.header(`Ghost Instances (${result.ghosts?.length || 0})`);
 
-        if (!result.ghosts || result.ghosts.length === 0) {
-          output.info('No ghost instances');
-          return;
+        if (options.json) {
+          output.outputJson(result);
+        } else {
+          output.header(`Ghost Instances (${result.ghosts?.length || 0})`);
+
+          if (!result.ghosts || result.ghosts.length === 0) {
+            output.info('No ghost instances');
+            return;
+          }
+
+          const rows = result.ghosts.map(g => [
+            g.id,
+            g.name || 'unnamed',
+            g.status,
+            g.rps?.toString() || '-',
+            g.createdAt ? new Date(g.createdAt).toLocaleString() : '-',
+          ]);
+          output.printTable(['ID', 'Name', 'Status', 'RPS', 'Created'], rows);
         }
-
-        const rows = result.ghosts.map(g => [
-          g.id,
-          g.name || 'unnamed',
-          g.status,
-          g.rps?.toString() || '-',
-          g.createdAt ? new Date(g.createdAt).toLocaleString() : '-',
-        ]);
-        output.printTable(['ID', 'Name', 'Status', 'RPS', 'Created'], rows);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to list ghosts: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to list ghosts');
       }
     });
 
@@ -215,16 +225,32 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
         output.labelValue('Name', result.name);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to create ghost: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to create ghost');
       }
     });
 
   ghosts
     .command('delete <id>')
     .description('Delete a ghost instance')
-    .action(async (id) => {
+    .option('-f, --force', 'Skip confirmation prompt')
+    .action(async (id, options) => {
       const client = getClient();
+
+      // Validate ID is provided and is not empty
+      if (!id || id.trim().length === 0) {
+        output.error('Ghost ID is required');
+        process.exit(1);
+      }
+
+      // Confirm destructive operation
+      if (!options.force) {
+        const confirmed = await output.confirm(`Delete ghost instance ${id}? This cannot be undone.`, false);
+        if (!confirmed) {
+          output.info('Delete cancelled');
+          return;
+        }
+      }
+
       const spin = output.spinner(`Deleting ghost ${id}...`);
       spin.start();
 
@@ -239,8 +265,7 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
         output.success(`Ghost ${id} deleted`);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to delete ghost: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to delete ghost');
       }
     });
 
@@ -264,8 +289,7 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
         output.success(`Ghost ${id || 'instances'} started`);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to start ghost: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to start ghost');
       }
     });
 
@@ -289,8 +313,7 @@ export function registerTrafficCommands(program: Command, getClient: () => Appar
         output.success(`Ghost ${id || 'instances'} stopped`);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to stop ghost: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to stop ghost');
       }
     });
 }

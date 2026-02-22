@@ -158,7 +158,8 @@ export function registerChaosCommands(program: Command, getClient: () => Apparat
   chaos
     .command('status')
     .description('Get status of active chaos experiments')
-    .action(async () => {
+    .option('--json', 'Output as JSON')
+    .action(async (options) => {
       const client = getClient();
       const spin = output.spinner('Fetching chaos status...');
       spin.start();
@@ -173,26 +174,30 @@ export function registerChaosCommands(program: Command, getClient: () => Apparat
         };
 
         spin.stop();
-        output.header('Chaos Experiments Status');
-        output.labelValue('Active Experiments', result.count || result.experiments?.length || 0);
 
-        if (!result.experiments || result.experiments.length === 0) {
-          output.info('No active chaos experiments');
-          return;
+        if (options.json) {
+          output.outputJson(result);
+        } else {
+          output.header('Chaos Experiments Status');
+          output.labelValue('Active Experiments', result.count || result.experiments?.length || 0);
+
+          if (!result.experiments || result.experiments.length === 0) {
+            output.info('No active chaos experiments');
+            return;
+          }
+
+          output.subheader('\nActive Experiments:');
+          const rows = result.experiments.map((exp, idx) => [
+            idx + 1,
+            exp.type,
+            `${exp.duration}ms`,
+            new Date(exp.startTime).toLocaleTimeString(),
+          ]);
+          output.printTable(['#', 'Type', 'Duration', 'Started'], rows);
         }
-
-        output.subheader('\nActive Experiments:');
-        const rows = result.experiments.map((exp, idx) => [
-          idx + 1,
-          exp.type,
-          `${exp.duration}ms`,
-          new Date(exp.startTime).toLocaleTimeString(),
-        ]);
-        output.printTable(['#', 'Type', 'Duration', 'Started'], rows);
       } catch (err) {
         spin.stop();
-        output.error(`Failed to fetch chaos status: ${(err as Error).message}`);
-        process.exit(1);
+        output.handleError(err, 'Failed to fetch chaos status');
       }
     });
 }
