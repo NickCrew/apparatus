@@ -4,7 +4,8 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 const undiciState = {
-  failMetrics: false,
+  metricsFailuresRemaining: 0,
+  metricsAlwaysFail: false,
 };
 
 vi.mock('../src/ai/client.js', () => ({
@@ -24,7 +25,10 @@ vi.mock('undici', async () => {
     ...actual,
     request: vi.fn(async (url: string | URL, options?: any) => {
       const target = String(url);
-      if (undiciState.failMetrics && target.includes('/metrics')) {
+      if (target.includes('/metrics') && (undiciState.metricsAlwaysFail || undiciState.metricsFailuresRemaining > 0)) {
+        if (undiciState.metricsFailuresRemaining > 0) {
+          undiciState.metricsFailuresRemaining -= 1;
+        }
         return {
           statusCode: 500,
           body: {
@@ -69,12 +73,14 @@ describe('AI Autopilot Memory State Compatibility', () => {
   });
 
   beforeEach(() => {
-    undiciState.failMetrics = false;
+    undiciState.metricsFailuresRemaining = 0;
+    undiciState.metricsAlwaysFail = false;
     resetAutopilotStateForTests();
   });
 
   afterEach(() => {
-    undiciState.failMetrics = false;
+    undiciState.metricsFailuresRemaining = 0;
+    undiciState.metricsAlwaysFail = false;
     resetAutopilotStateForTests();
   });
 
@@ -86,7 +92,9 @@ describe('AI Autopilot Memory State Compatibility', () => {
     }
   });
 
-  it('retains session memory in completed state', async () => {
+  it('recovers from a transient metrics failure and still completes with memory intact', async () => {
+    undiciState.metricsFailuresRemaining = 1;
+
     const startRes = await request(baseUrl)
       .post('/api/redteam/autopilot/start')
       .send({
@@ -105,6 +113,16 @@ describe('AI Autopilot Memory State Compatibility', () => {
     expect(terminal.session.state).toBe('completed');
     expect(terminal.session.sessionContext).toBeTruthy();
     expect(Array.isArray(terminal.session.sessionContext.observations)).toBe(true);
+    expect(
+      terminal.session.thoughts.some((entry: { message: string }) =>
+        entry.message.includes('Retrying telemetry capture')
+      )
+    ).toBe(true);
+    expect(
+      terminal.session.thoughts.some((entry: { message: string }) =>
+        entry.message.includes('Telemetry capture recovered')
+      )
+    ).toBe(true);
   });
 
   it('retains session memory in stopped state', async () => {
@@ -133,7 +151,7 @@ describe('AI Autopilot Memory State Compatibility', () => {
   });
 
   it('retains session memory in failed state', async () => {
-    undiciState.failMetrics = true;
+    undiciState.metricsAlwaysFail = true;
 
     const startRes = await request(baseUrl)
       .post('/api/redteam/autopilot/start')
@@ -152,6 +170,7 @@ describe('AI Autopilot Memory State Compatibility', () => {
     const terminal = await waitForTerminalState(startRes.body.sessionId);
     expect(terminal.session.state).toBe('failed');
     expect(terminal.session.error).toBeTruthy();
+    expect(terminal.session.error).toContain('Telemetry capture failed after');
     expect(terminal.session.sessionContext).toBeTruthy();
     expect(Array.isArray(terminal.session.sessionContext.relations)).toBe(true);
   });
