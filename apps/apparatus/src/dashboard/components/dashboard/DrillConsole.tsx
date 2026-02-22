@@ -43,11 +43,11 @@ export function DrillConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-neutral-100 font-mono flex items-center gap-2 ml-2">
             <ShieldAlert className="h-5 w-5 text-danger-400" />
             Breach Protocol
           </h1>
-          <p className="text-neutral-400 text-sm mt-1">Run timed incident drills and practice response under pressure.</p>
+          <p className="text-neutral-400 text-sm mt-1 ml-2">Run timed incident drills and practice response under pressure.</p>
         </div>
 
         {activeRun && (

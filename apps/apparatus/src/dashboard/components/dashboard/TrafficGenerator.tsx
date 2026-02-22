@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 import { Slider } from '../ui/slider';
 import { Zap, AlertTriangle, Clock, FlaskConical, Play, Square, Settings2, Target, Waves } from 'lucide-react';
 import { useApparatus } from '../../providers/ApparatusProvider';
@@ -76,7 +84,7 @@ export function TrafficGenerator() {
   if (!config) return null;
 
   return (
-    <Card variant="panel" className="flex flex-col h-full overflow-hidden">
+    <Card variant="panel" className="flex h-full flex-col overflow-hidden">
       <CardHeader className="flex-none border-b border-neutral-800/30 pb-3 mb-0 bg-neutral-900/30">
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-sm uppercase tracking-widest font-mono">
@@ -105,18 +113,21 @@ export function TrafficGenerator() {
           </label>
           <div className="grid grid-cols-2 gap-2">
             {PRESETS.map(p => (
-              <button
+              <Button
                 key={p.name}
+                type="button"
                 onClick={() => updateConfig(p)}
+                variant={config.intensity === p.intensity && config.pattern === p.pattern ? 'outline' : 'secondary'}
+                size="sm"
                 className={cn(
-                  "px-3 py-2 text-left text-[11px] font-mono border transition-all rounded-[2px]",
+                  "h-auto justify-start px-3 py-2 text-left text-[11px] font-mono",
                   config.intensity === p.intensity && config.pattern === p.pattern
-                    ? "bg-primary-500/10 border-primary-500/50 text-primary-400"
-                    : "bg-neutral-900/40 border-neutral-700 text-neutral-400 hover:bg-neutral-900/70 hover:border-neutral-600"
+                    ? "text-primary-400"
+                    : "text-neutral-400"
                 )}
               >
                 {p.name.toUpperCase()}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -127,22 +138,16 @@ export function TrafficGenerator() {
             <Waves className="h-3 w-3" />
             Traffic Pattern
           </label>
-          <div className="grid grid-cols-3 gap-1 bg-neutral-900/60 p-1 rounded-sm border border-neutral-700">
-            {(['steady', 'sine', 'spiky'] as const).map(p => (
-                <button
-                    key={p}
-                    onClick={() => updateConfig({ pattern: p })}
-                    className={cn(
-                        "py-1.5 text-[10px] font-mono uppercase rounded-[1px] transition-all",
-                        config.pattern === p 
-                            ? "bg-primary text-primary-foreground font-bold shadow-glow-primary" 
-                            : "text-neutral-500 hover:text-neutral-300"
-                    )}
-                >
-                    {p}
-                </button>
-            ))}
-          </div>
+          <Select value={config.pattern} onValueChange={(value) => updateConfig({ pattern: value as DemoConfig['pattern'] })}>
+            <SelectTrigger className="h-9 border-neutral-700 bg-neutral-900/60 text-[11px] uppercase text-neutral-200">
+              <SelectValue placeholder="Select pattern" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="steady">STEADY</SelectItem>
+              <SelectItem value="sine">SINE</SelectItem>
+              <SelectItem value="spiky">SPIKY</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Targeting */}
@@ -152,21 +157,24 @@ export function TrafficGenerator() {
             Target Endpoint
           </label>
           <div className="relative">
-            <input 
-                type="text"
-                value={config.targetPath || ''}
-                placeholder="Random endpoints (default)"
-                onChange={e => setConfig({ ...config, targetPath: e.target.value || null })}
-                onBlur={() => updateConfig({ targetPath: config.targetPath })}
-                className="w-full bg-neutral-900/60 border border-neutral-700 rounded-sm px-3 py-2 text-[11px] font-mono text-primary-400 placeholder:text-neutral-600 focus:outline-none focus:border-primary-500/50"
+            <Input
+              type="text"
+              value={config.targetPath || ''}
+              placeholder="Random endpoints (default)"
+              onChange={(event) => setConfig({ ...config, targetPath: event.target.value || null })}
+              onBlur={() => updateConfig({ targetPath: config.targetPath })}
+              className="h-9 border-neutral-700 bg-neutral-900/60 text-[11px] text-primary-400 placeholder:text-neutral-600"
             />
             {config.targetPath && (
-                <button 
-                    onClick={() => updateConfig({ targetPath: null })}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono text-neutral-600 hover:text-danger-400"
-                >
-                    CLEAR
-                </button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => updateConfig({ targetPath: null })}
+                className="absolute right-1 top-1/2 h-6 -translate-y-1/2 px-2 text-[9px] text-neutral-600 hover:text-danger-400"
+              >
+                CLEAR
+              </Button>
             )}
           </div>
         </div>

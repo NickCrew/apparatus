@@ -30,8 +30,8 @@ export function DefenseConsole() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-100 font-mono">Active Defense</h1>
-        <p className="text-neutral-400 text-sm mt-1">Configure WAF rules and traffic filtering.</p>
+        <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Active Defense</h1>
+        <p className="text-neutral-400 text-sm mt-1 ml-2">Configure WAF rules and traffic filtering.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

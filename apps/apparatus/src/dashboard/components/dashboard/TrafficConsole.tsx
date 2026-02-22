@@ -12,6 +12,8 @@ export function TrafficConsole() {
   const { events } = useTrafficStream(500); // Larger buffer for full view
   const [isPaused, setIsPaused] = useState(false);
   const [filters, setFilters] = useState<Set<string>>(new Set(['2xx', '3xx', '4xx', '5xx']));
+  const [liveFeedAutoScroll, setLiveFeedAutoScroll] = useState(true);
+  const liveFeedScrollerRef = useRef<HTMLDivElement | null>(null);
 
   const toggleFilter = (category: string) => {
       const next = new Set(filters);
@@ -47,13 +49,33 @@ export function TrafficConsole() {
       };
   }, [events]);
 
+  const latestLiveEventId = filteredEvents[0]?.id;
+
+  useEffect(() => {
+      if (!liveFeedAutoScroll) return;
+      const scroller = liveFeedScrollerRef.current;
+      if (!scroller) return;
+      // Feed is newest-first, so top is the latest entry.
+      scroller.scrollTop = 0;
+  }, [liveFeedAutoScroll, latestLiveEventId]);
+
+  const toggleLiveFeedAutoScroll = () => {
+      setLiveFeedAutoScroll((current) => {
+          const next = !current;
+          if (next && liveFeedScrollerRef.current) {
+              liveFeedScrollerRef.current.scrollTop = 0;
+          }
+          return next;
+      });
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       {/* Header / Stats Bar */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono uppercase">Traffic Monitor</h1>
-          <p className="text-neutral-400 text-sm mt-1">Real-time HTTP telemetry and latency analysis.</p>
+          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Traffic Monitor</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2">Real-time HTTP telemetry and latency analysis.</p>
         </div>
         
         <div className="flex gap-6 items-center bg-neutral-900/50 p-3 rounded-lg border border-neutral-800">
@@ -76,9 +98,14 @@ export function TrafficConsole() {
         </div>
       </div>
 
+      {/* Synthetic Controls */}
+      <div className="flex-none h-[320px] lg:h-[340px]">
+        <TrafficGenerator />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
         {/* Main Visualizer */}
-        <div className="lg:col-span-4 h-full flex flex-col gap-4 min-h-0">
+        <div className="lg:col-span-8 h-full flex flex-col gap-4 min-h-0">
            <Card variant="panel" glow="info" kinetic={true} className="flex-1 relative overflow-hidden flex flex-col min-h-0">
               <div className="absolute top-4 right-4 z-10 flex gap-2">
                   {(['2xx', '3xx', '4xx', '5xx'] as const).map(cat => (
@@ -115,18 +142,35 @@ export function TrafficConsole() {
            </Card>
         </div>
 
-        {/* Generator Panel */}
-        <div className="lg:col-span-5 h-full min-h-0">
-            <TrafficGenerator />
-        </div>
-
         {/* Live List */}
-        <Card variant="glass" className="lg:col-span-3 h-full flex flex-col min-h-0">
+        <Card variant="glass" className="lg:col-span-4 h-full flex flex-col min-h-0">
             <CardHeader className="flex-none border-b border-white/5 pb-3">
-                <CardTitle className="text-xs">Live Feed</CardTitle>
+                <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-xs">Live Feed</CardTitle>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={toggleLiveFeedAutoScroll}
+                        aria-pressed={liveFeedAutoScroll}
+                        className="h-7 px-2 text-[10px]"
+                    >
+                        {liveFeedAutoScroll ? (
+                            <>
+                                <Pause className="h-3 w-3 mr-1" />
+                                Stop Auto-Scrolling
+                            </>
+                        ) : (
+                            <>
+                                <Play className="h-3 w-3 mr-1" />
+                                Resume Auto-Scrolling
+                            </>
+                        )}
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-0 min-h-0">
-                <div className="divide-y divide-white/5 font-mono text-[11px]">
+            <CardContent ref={liveFeedScrollerRef} className="flex-1 overflow-y-auto p-0 min-h-0">
+                <div className="font-mono text-[11px]">
                     {filteredEvents.slice(0, 50).map((ev) => {
                         const isError = ev.status >= 500;
                         const isWarning = ev.status >= 400 && ev.status < 500;
@@ -135,7 +179,7 @@ export function TrafficConsole() {
                             <div 
                                 key={ev.id} 
                                 className={cn(
-                                    "p-3 flex justify-between items-center group transition-colors relative",
+                                    "p-3 flex justify-between items-center group transition-colors relative border-b border-white/5 last:border-b-0",
                                     isError ? "bg-danger/5 hover:bg-danger/10" :
                                     isWarning ? "bg-warning/5 hover:bg-warning/10" :
                                     "hover:bg-neutral-900/50"

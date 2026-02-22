@@ -22,8 +22,8 @@ export function NetworkConsole() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-100 font-mono">Network Forensics</h1>
-        <p className="text-neutral-400 text-sm mt-1">Packet capture, live monitoring, and traffic replay analysis.</p>
+        <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Network Forensics</h1>
+        <p className="text-neutral-400 text-sm mt-1 ml-2">Packet capture, live monitoring, and traffic replay analysis.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">

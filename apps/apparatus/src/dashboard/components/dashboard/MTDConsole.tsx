@@ -21,8 +21,8 @@ export function MTDConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono uppercase">Moving Target Defense</h1>
-          <p className="text-neutral-400 text-sm mt-1">Polymorphic route shifting to hide internal APIs.</p>
+          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Moving Target Defense</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2">Polymorphic route shifting to hide internal APIs.</p>
         </div>
         <Badge variant={isActive ? 'success' : 'neutral'} dot>
             {isActive ? 'ACTIVE_DEFENSE' : 'MTD_DISABLED'}
