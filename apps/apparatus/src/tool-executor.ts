@@ -1,8 +1,38 @@
 import { allocateMemorySpike, clearMemorySpike, scheduleCrash, stopCpuSpike, triggerCpuSpike } from "./chaos.js";
 import { broadcastClusterAttack, broadcastClusterStop, stopClusterAttack } from "./cluster.js";
 import { setMtdPrefix } from "./mtd.js";
+import { spawn } from "child_process";
+import path from "path";
+import { cfg } from "./config.js";
+import { logger } from "./logger.js";
 
-export const TOOL_ACTIONS = ["chaos.cpu", "chaos.memory", "cluster.attack", "mtd.rotate", "delay", "chaos.crash"] as const;
+const MAX_PROCESS_TIMEOUT_MS = 60_000; // 1 minute cap for external tools
+const MAX_OUTPUT_BUFFER = 10_000; // 10KB cap for log collection
+
+function isSafeTarget(url: string) {
+    if (cfg.demoMode) return true;
+    try {
+        const parsed = new URL(url);
+        const host = parsed.hostname.toLowerCase();
+        // Block localhost and RFC 1918 private ranges unless in demo mode
+        if (host === "localhost" || host === "127.0.0.1" || host === "::1") return false;
+        if (/^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.)/.test(host)) return false;
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export const TOOL_ACTIONS = [
+    "chaos.cpu",
+    "chaos.memory",
+    "cluster.attack",
+    "mtd.rotate",
+    "delay",
+    "chaos.crash",
+    "k6.run",
+    "nuclei.run",
+] as const;
 export type ToolAction = typeof TOOL_ACTIONS[number];
 
 export interface ToolStep {
@@ -91,6 +121,44 @@ export function sanitizeToolParams(action: ToolAction, rawParams: Record<string,
             return { delayMs: toPositiveInt(rawParams.delayMs, 1000, 100, 30000) };
         case "delay":
             return { duration: toPositiveInt(rawParams.duration, 1000, 10, 120000) };
+        case "k6.run": {
+            const script = String(rawParams.script || "baseline.js");
+            const target = String(rawParams.target || "");
+            const duration = String(rawParams.duration || "10s");
+            
+            if (script.includes("..") || script.includes("/") || script.includes("\\")) {
+                throw new Error("Invalid script name: path traversal not allowed");
+            }
+            if (!/^\d{1,3}[smh]$/.test(duration)) {
+                throw new Error("Invalid duration format (e.g. 30s, 1m)");
+            }
+            if (!isSafeTarget(target)) {
+                throw new Error("Target URL restricted (internal/private IP)");
+            }
+
+            return {
+                script,
+                vus: toPositiveInt(rawParams.vus, 10, 1, 100),
+                duration,
+                target: parseTargetUrl(target),
+            };
+        }
+        case "nuclei.run": {
+            const template = String(rawParams.template || "ai-prompt-injection.yaml");
+            const target = String(rawParams.target || "");
+
+            if (template.includes("..") || template.includes("/") || template.includes("\\")) {
+                throw new Error("Invalid template name: path traversal not allowed");
+            }
+            if (!isSafeTarget(target)) {
+                throw new Error("Target URL restricted (internal/private IP)");
+            }
+
+            return {
+                template,
+                target: parseTargetUrl(target),
+            };
+        }
         default:
             throw new Error(`Unsupported action: ${action}`);
     }
@@ -152,6 +220,94 @@ export async function executeToolStep(step: ToolStep, options?: ToolExecutionOpt
                 const duration = sanitizedParams.duration as number;
                 await cancellableSleep(duration, options?.shouldCancel);
                 message = `Delayed for ${duration}ms`;
+                break;
+            }
+
+            case "k6.run": {
+                if (!cfg.k6ScenariosPath) throw new Error("K6 Scenarios path not configured");
+                
+                const scriptPath = path.resolve(cfg.k6ScenariosPath, sanitizedParams.script as string);
+                if (!scriptPath.startsWith(path.resolve(cfg.k6ScenariosPath))) {
+                    throw new Error("Path traversal blocked");
+                }
+
+                const args = ["run", scriptPath, "--vus", String(sanitizedParams.vus), "--duration", sanitizedParams.duration as string, "-e", `BASE=${sanitizedParams.target}`];
+                
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), MAX_PROCESS_TIMEOUT_MS);
+                
+                const k6 = spawn("k6", args, { signal: controller.signal });
+                let output = "";
+                
+                k6.stdout.on("data", (data) => {
+                    if (output.length < MAX_OUTPUT_BUFFER) output += data.toString();
+                });
+                
+                k6.stderr.on("data", (data) => {
+                    if (output.length < MAX_OUTPUT_BUFFER) output += data.toString();
+                });
+
+                const exitCode = await new Promise<number | string>((resolve, reject) => {
+                    k6.on("close", resolve);
+                    k6.on("error", (err) => {
+                        if (err.name === "AbortError") resolve("timeout");
+                        else reject(err);
+                    });
+                });
+
+                clearTimeout(timeout);
+
+                if (exitCode === "timeout") {
+                    throw new Error(`k6 timed out after ${MAX_PROCESS_TIMEOUT_MS}ms`);
+                }
+                if (exitCode !== 0) {
+                    throw new Error(`k6 failed with exit code ${exitCode}: ${output.slice(-200)}`);
+                }
+                message = `k6 finished successfully. Output: ${output.slice(-100)}`;
+                break;
+            }
+
+            case "nuclei.run": {
+                if (!cfg.nucleiTemplatesPath) throw new Error("Nuclei Templates path not configured");
+
+                const templatePath = path.resolve(cfg.nucleiTemplatesPath, sanitizedParams.template as string);
+                if (!templatePath.startsWith(path.resolve(cfg.nucleiTemplatesPath))) {
+                    throw new Error("Path traversal blocked");
+                }
+
+                const args = ["-t", templatePath, "-u", sanitizedParams.target as string, "-nc"];
+                
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), MAX_PROCESS_TIMEOUT_MS);
+
+                const nuclei = spawn("nuclei", args, { signal: controller.signal });
+                let output = "";
+                
+                nuclei.stdout.on("data", (data) => {
+                    if (output.length < MAX_OUTPUT_BUFFER) output += data.toString();
+                });
+                
+                nuclei.stderr.on("data", (data) => {
+                    if (output.length < MAX_OUTPUT_BUFFER) output += data.toString();
+                });
+
+                const exitCode = await new Promise<number | string>((resolve, reject) => {
+                    nuclei.on("close", resolve);
+                    nuclei.on("error", (err) => {
+                        if (err.name === "AbortError") resolve("timeout");
+                        else reject(err);
+                    });
+                });
+
+                clearTimeout(timeout);
+
+                if (exitCode === "timeout") {
+                    throw new Error(`nuclei timed out after ${MAX_PROCESS_TIMEOUT_MS}ms`);
+                }
+                if (exitCode !== 0) {
+                    throw new Error(`nuclei failed with exit code ${exitCode}: ${output.slice(-200)}`);
+                }
+                message = `nuclei finished successfully. Findings: ${output.length > 0 ? "Detected" : "None"}`;
                 break;
             }
 

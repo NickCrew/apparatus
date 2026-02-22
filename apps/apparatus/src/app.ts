@@ -68,6 +68,8 @@ import {
 } from "./drills.js";
 import { startDemoLoop, stopDemoLoop, getDemoConfig, updateDemoConfig, type DemoConfig } from "./demo-mode.js";
 import { attackerProfileHandler, attackerRegistryHandler } from "./attacker-tracker.js";
+import { readdirSync } from "fs";
+import { readdir } from "fs/promises";
 import { request } from "undici";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -462,6 +464,33 @@ export function createApp(): Express {
         } catch (err: any) {
             logger.error({ error: err.message }, "AI Chat Error");
             res.status(500).json({ error: err.message });
+        }
+    });
+
+    // Lab Integration Endpoints
+    app.get("/api/lab/k6/scenarios", securityGate, async (_req, res) => {
+        try {
+            if (!cfg.k6ScenariosPath) return res.json({ success: true, scenarios: [] });
+            const files = (await readdir(cfg.k6ScenariosPath))
+                .filter(f => f.endsWith('.js'))
+                .map(f => ({ name: f, path: f }));
+            res.json({ success: true, scenarios: files });
+        } catch (e: unknown) {
+            logger.error({ error: e }, "Failed to list k6 scenarios");
+            res.status(500).json({ error: "Failed to list k6 scenarios" });
+        }
+    });
+
+    app.get("/api/lab/nuclei/templates", securityGate, async (_req, res) => {
+        try {
+            if (!cfg.nucleiTemplatesPath) return res.json({ success: true, templates: [] });
+            const files = (await readdir(cfg.nucleiTemplatesPath))
+                .filter(f => f.endsWith('.yaml') || f.endsWith('.yml'))
+                .map(f => ({ name: f, path: f }));
+            res.json({ success: true, templates: files });
+        } catch (e: unknown) {
+            logger.error({ error: e }, "Failed to list nuclei templates");
+            res.status(500).json({ error: "Failed to list nuclei templates" });
         }
     });
 

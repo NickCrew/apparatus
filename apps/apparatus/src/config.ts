@@ -29,7 +29,10 @@ export const cfg = {
     enableCompression: process.env.COMPRESSION !== "false",
     demoMode: process.env.DEMO_MODE === "true" || process.env.APPARATUS_DEMO === "true",
     tunnelUrl: process.env.TUNNEL_URL || "",
-    tunnelApiKey: process.env.TUNNEL_API_KEY || ""
+    tunnelApiKey: process.env.TUNNEL_API_KEY || "",
+    // Integration with Chimera scripts
+    k6ScenariosPath: process.env.K6_SCENARIOS_PATH || "",
+    nucleiTemplatesPath: process.env.NUCLEI_TEMPLATES_PATH || "",
 };
 
 export const MTD_SKIP_ROUTE_PREFIXES = [
