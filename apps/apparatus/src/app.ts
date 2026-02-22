@@ -27,7 +27,7 @@ import { webhookReceiveHandler, webhookListHandler } from "./webhook.js";
 import { eicarHandler, crashHandler, cpuSpikeHandler, memorySpikeHandler } from "./chaos.js";
 import { kvHandler } from "./kv.js";
 import { scriptHandler } from "./scripting.js";
-import { pcapHandler, harReplayHandler } from "./forensics.js";
+import { pcapHandler, harReplayHandler, livePacketHandler } from "./forensics.js";
 import { clusterAttackHandler, clusterAttackStopHandler, getClusterMembers } from "./cluster.js";
 import { tarpitMiddleware, tarpitListHandler, tarpitReleaseHandler } from "./tarpit.js";
 import { selfHealingMiddleware, getHealthStatus } from "./self-healing.js";
@@ -93,8 +93,16 @@ export function createApp(): Express {
     const safeOrigins = new Set([
         "http://localhost:8080",
         "http://localhost:8090",
+        "http://localhost:4173",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
         "http://127.0.0.1:8080",
         "http://127.0.0.1:8090",
+        "http://127.0.0.1:4173",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",
     ]);
 
     // 0. CORS (safe localhost defaults, permissive only in demo mode)
@@ -373,6 +381,7 @@ export function createApp(): Express {
 
     // Network Forensics
     app.get("/capture.pcap", pcapHandler);
+    app.get("/api/forensics/live", securityGate, livePacketHandler);
     app.post("/replay", harReplayHandler);
 
     // Distributed Cluster
@@ -423,6 +432,30 @@ export function createApp(): Express {
     });
 
     // Infrastructure Status Proxies
+    app.get("/api/infra/status", securityGate, (_req, res) => {
+        // Status checks are primarily configuration-based manifests
+        // In a real implementation, these would query the running server instances
+        res.json({
+            success: true,
+            servers: [
+                { name: "HTTP/1.1", protocol: "tcp", port: cfg.portHttp1, status: "active" },
+                { name: "HTTP/2 TLS", protocol: "tcp", port: cfg.portHttp2, status: "active" },
+                { name: "HTTP/2 Cleartext (h2c)", protocol: "tcp", port: cfg.portHttp1 + 1, status: cfg.enableH2C ? "active" : "disabled" },
+                { name: "gRPC", protocol: "tcp", port: cfg.portGrpc, status: "active" },
+                { name: "WebSocket", protocol: "ws", port: cfg.portHttp1, path: "/ws", status: "active" },
+                { name: "Redis Mock", protocol: "tcp", port: cfg.portRedis, status: "active" },
+                { name: "MQTT Broker", protocol: "tcp", port: cfg.portMqtt, status: "active" },
+                { name: "SMTP Receiver", protocol: "tcp", port: cfg.portSmtp, status: "active" },
+                { name: "Syslog Receiver", protocol: "udp", port: cfg.portSyslog, status: "active" },
+                { name: "Syslog Alt", protocol: "udp", port: cfg.portSyslogAlt, status: "active" },
+                { name: "ICAP Server", protocol: "tcp", port: cfg.portIcap, status: "active" },
+                { name: "TCP Echo", protocol: "tcp", port: cfg.portTcp, status: "active" },
+                { name: "UDP Echo", protocol: "udp", port: cfg.portUdp, status: "active" },
+                { name: "Bad SSL", protocol: "tcp", port: cfg.portBadSsl, status: "active" },
+            ]
+        });
+    });
+
     app.get("/api/infra/imposter", async (_req, res) => {
         try {
             const { statusCode, body } = await request("http://127.0.0.1:16925/health");

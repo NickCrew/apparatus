@@ -1,8 +1,9 @@
 import dgram from "dgram";
 import { logger } from "./logger.js";
+import { cfg } from "./config.js";
 
 export function startSyslogServer() {
-    const port = 5514; // 514 is privileged
+    const port = cfg.portSyslog; // 514 is privileged
     const server = dgram.createSocket("udp4");
 
     server.on("error", (err) => {

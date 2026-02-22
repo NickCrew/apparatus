@@ -42,8 +42,8 @@ export function startBadSslServer() {
             cert: fs.readFileSync(cfg.tlsCertPath)
         };
 
-        const port = 8444;
-        https.createServer(options, app).listen(port, "0.0.0.0", () => {
+        const port = cfg.portBadSsl;
+        https.createServer(options, app).listen(port, cfg.host, () => {
             logger.info({ port }, "Bad SSL Server listening (Self-signed/Untrusted)");
         });
     } catch (e: any) {
