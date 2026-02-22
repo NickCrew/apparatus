@@ -30,6 +30,7 @@ import { HelpSearchModal } from './components/modals/HelpSearchModal';
 import { DocViewer } from './components/layout/DocViewer';
 import { DocumentationHub } from './components/docs/DocumentationHub';
 import { HudOverlayLayer } from './components/hud/HudOverlayLayer';
+import { PageShell } from './components/ui/PageShell';
 import { useState, useEffect } from 'react';
 
 function Layout() {
@@ -77,7 +78,9 @@ function Layout() {
       <div className="flex flex-col flex-1 min-w-0 relative">
         <Header />
         <MainContent>
-          <Outlet />
+          <PageShell>
+            <Outlet />
+          </PageShell>
         </MainContent>
       </div>
     </div>
@@ -92,8 +95,8 @@ export default function App() {
           <DocViewerProvider>
             <HudOverlayLayer />
             <Routes>
-              <Route path="docs" element={<DocumentationHub />} />
-              <Route path="docs/:docId" element={<DocumentationHub />} />
+              <Route path="docs" element={<PageShell><DocumentationHub /></PageShell>} />
+              <Route path="docs/:docId" element={<PageShell><DocumentationHub /></PageShell>} />
               <Route path="/" element={<Layout />}>
                 <Route index element={<Overview />} />
                 <Route path="traffic" element={<TrafficConsole />} />

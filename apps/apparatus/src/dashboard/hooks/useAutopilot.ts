@@ -55,6 +55,51 @@ export interface SessionSummary {
   failureReason?: string;
 }
 
+export interface SessionContextAsset {
+  id: string;
+  type: string;
+  value: string;
+  source: string;
+  confidence: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  occurrences: number;
+}
+
+export interface SessionContextRelation {
+  id: string;
+  type: string;
+  fromAssetId: string;
+  toAssetId: string;
+  source: string;
+  confidence: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  occurrences: number;
+}
+
+export interface SessionObjectiveProgress {
+  preconditionsMet: string[];
+  openedPaths: string[];
+  breakSignals: string[];
+  lastUpdatedAt?: string;
+}
+
+export interface SessionContext {
+  assets: SessionContextAsset[];
+  observations: Array<{
+    id: string;
+    kind: string;
+    source: string;
+    summary: string;
+    firstSeenAt: string;
+    lastSeenAt: string;
+    occurrences: number;
+  }>;
+  relations: SessionContextRelation[];
+  objectiveProgress: SessionObjectiveProgress;
+}
+
 export interface AutopilotSession {
   id: string;
   objective: string;
@@ -65,6 +110,7 @@ export interface AutopilotSession {
   thoughts: ThoughtEntry[];
   actions: ActionEntry[];
   findings: FindingRecord[];
+  sessionContext?: SessionContext;
   summary?: SessionSummary;
   error?: string;
 }
