@@ -26,6 +26,8 @@ import { logger } from "../logger.js";
 const ALL_TOOLS: ToolAction[] = ["cluster.attack", "chaos.cpu", "chaos.memory", "mtd.rotate", "delay", "chaos.crash"];
 const DEFAULT_ALLOWED_TOOLS: ToolAction[] = ["cluster.attack", "chaos.cpu", "chaos.memory", "mtd.rotate", "delay"];
 const BLOCKED_ATTACK_PREFIXES = ["/api/redteam", "/api/simulator", "/api/attackers", "/cluster", "/chaos", "/scenarios", "/proxy", "/tarpit", "/blackhole", "/deception"];
+const SNAPSHOT_CAPTURE_MAX_ATTEMPTS = 3;
+const SNAPSHOT_CAPTURE_RETRY_DELAY_MS = 200;
 
 interface Decision {
     thought: string;
@@ -51,6 +53,13 @@ interface VerificationSummary {
     crashDetected: boolean;
     newServerErrors: number;
     notes: string;
+}
+
+interface SnapshotRetryOptions {
+    maxAttempts?: number;
+    retryDelayMs?: number;
+    onRetry?: (error: Error, attempt: number, maxAttempts: number) => void;
+    onRecovered?: (attempt: number, maxAttempts: number) => void;
 }
 
 interface PlannerMemorySummary {
@@ -254,6 +263,47 @@ async function captureRuntimeSnapshot(baseUrl: string, previous?: RuntimeSnapsho
         memPercent,
         healthy,
     };
+}
+
+function asError(value: unknown) {
+    if (value instanceof Error) return value;
+    if (typeof value === "string") return new Error(value);
+    return new Error("Unknown error");
+}
+
+function sleep(ms: number) {
+    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+async function captureRuntimeSnapshotWithRetry(
+    baseUrl: string,
+    previous: RuntimeSnapshot | undefined,
+    options: SnapshotRetryOptions = {}
+) {
+    const maxAttempts = Math.max(1, options.maxAttempts ?? SNAPSHOT_CAPTURE_MAX_ATTEMPTS);
+    const retryDelayMs = Math.max(0, options.retryDelayMs ?? SNAPSHOT_CAPTURE_RETRY_DELAY_MS);
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            const snapshot = await captureRuntimeSnapshot(baseUrl, previous);
+            if (attempt > 1) {
+                options.onRecovered?.(attempt, maxAttempts);
+            }
+            return snapshot;
+        } catch (error) {
+            const err = asError(error);
+            if (attempt >= maxAttempts) {
+                throw new Error(`Telemetry capture failed after ${maxAttempts} attempts: ${err.message}`);
+            }
+            options.onRetry?.(err, attempt, maxAttempts);
+            const backoff = retryDelayMs * attempt;
+            if (backoff > 0) {
+                await sleep(backoff);
+            }
+        }
+    }
+
+    throw new Error("Telemetry capture failed unexpectedly");
 }
 
 function pickTargetPath(objective: string) {
@@ -739,7 +789,22 @@ async function runMission(control: SessionControl) {
             updateSession(control.sessionId, { iteration });
 
             addThought(control.sessionId, "analyze", "Scanning /metrics and /sysinfo for current pressure and stability.");
-            const before = await captureRuntimeSnapshot(control.baseUrl, previousSnapshot);
+            const before = await captureRuntimeSnapshotWithRetry(control.baseUrl, previousSnapshot, {
+                onRetry: (error, attempt, maxAttempts) => {
+                    addThought(
+                        control.sessionId,
+                        "analyze",
+                        `Telemetry capture failed (${error.message}). Retrying telemetry capture (${attempt + 1}/${maxAttempts}).`
+                    );
+                },
+                onRecovered: (attempt, maxAttempts) => {
+                    addThought(
+                        control.sessionId,
+                        "analyze",
+                        `Telemetry capture recovered on attempt ${attempt}/${maxAttempts}.`
+                    );
+                },
+            });
             previousSnapshot = before;
 
             if (control.stopRequested || control.killRequested) break;
@@ -793,7 +858,22 @@ async function runMission(control: SessionControl) {
             if (control.stopRequested || control.killRequested) break;
 
             addThought(control.sessionId, "verify", "Checking for crash and 5xx error movement after action.");
-            const after = await captureRuntimeSnapshot(control.baseUrl, before);
+            const after = await captureRuntimeSnapshotWithRetry(control.baseUrl, before, {
+                onRetry: (error, attempt, maxAttempts) => {
+                    addThought(
+                        control.sessionId,
+                        "verify",
+                        `Post-action telemetry capture failed (${error.message}). Retrying telemetry capture (${attempt + 1}/${maxAttempts}).`
+                    );
+                },
+                onRecovered: (attempt, maxAttempts) => {
+                    addThought(
+                        control.sessionId,
+                        "verify",
+                        `Post-action telemetry capture recovered on attempt ${attempt}/${maxAttempts}.`
+                    );
+                },
+            });
             previousSnapshot = after;
             const healthAfter = await getHealthStatus(control.baseUrl);
             const verification = summarizeVerification({ before, after, healthAfter });
