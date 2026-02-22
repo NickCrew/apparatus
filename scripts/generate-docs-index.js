@@ -24,6 +24,15 @@ const categoryMap = {
   'architecture.md': 'Architecture',
   'quick-reference.md': 'Quick Reference',
   'integration-guide.md': 'Integration',
+  'tutorial-autopilot.md': 'Tutorials',
+  'tutorial-defense-rules.md': 'Tutorials',
+  'tutorial-dashboard.md': 'Tutorials',
+  'tutorial-scenarios.md': 'Tutorials',
+  'tutorial-chaos-engineering.md': 'Tutorials',
+  'tutorial-monitoring.md': 'Tutorials',
+  'tutorial-cli.md': 'Tutorials',
+  'tutorial-webhooks.md': 'Tutorials',
+  'DOCUMENTATION_ROADMAP.md': 'Reference',
 };
 
 /**
