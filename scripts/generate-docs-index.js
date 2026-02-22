@@ -32,7 +32,7 @@ const categoryMap = {
   'tutorial-monitoring.md': 'Tutorials',
   'tutorial-cli.md': 'Tutorials',
   'tutorial-webhooks.md': 'Tutorials',
-  'DOCUMENTATION_ROADMAP.md': 'Reference',
+  // DOCUMENTATION_ROADMAP.md - internal/developer only, excluded from user-facing docs
 };
 
 /**
@@ -84,12 +84,18 @@ const index = [];
 const files = fs.readdirSync(docsDir).filter(f => f.endsWith('.md'));
 
 files.forEach(filename => {
+  // Only index files explicitly listed in categoryMap (user-facing docs)
+  if (!(filename in categoryMap)) {
+    console.log(`⊘ Skipped (internal/dev only): ${filename}`);
+    return;
+  }
+
   const filepath = path.join(docsDir, filename);
   const content = fs.readFileSync(filepath, 'utf-8');
 
   const title = extractTitle(content, filename);
   const id = generateId(title);
-  const category = categoryMap[filename] || 'Documentation';
+  const category = categoryMap[filename];
   const excerpt = extractExcerpt(content);
   const headings = extractHeadings(content);
 
