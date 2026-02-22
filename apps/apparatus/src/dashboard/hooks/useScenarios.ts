@@ -35,30 +35,39 @@ export function useScenarios() {
   }, [baseUrl]);
 
   const saveScenario = useCallback(async (scenario: Partial<Scenario>) => {
-    if (!baseUrl) return;
+    if (!baseUrl) {
+      throw new Error('Scenario API base URL is unavailable.');
+    }
     setIsLoading(true);
     try {
-      await fetch(`${baseUrl}/scenarios`, {
+      const res = await fetch(`${baseUrl}/scenarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(scenario)
       });
+      if (!res.ok) {
+        throw new Error(`Failed to save scenario (${res.status})`);
+      }
+      const saved = (await res.json()) as Scenario;
       await fetchScenarios();
+      return saved;
     } catch (e) {
       console.error(e);
+      throw e;
     } finally {
         setIsLoading(false);
     }
   }, [baseUrl, fetchScenarios]);
 
   const runScenario = useCallback(async (id: string) => {
-    if (!baseUrl) return;
-    try {
-      await fetch(`${baseUrl}/scenarios/${id}/run`, { method: 'POST' });
-      // In a real app, we'd subscribe to progress updates
-    } catch (e) {
-      console.error(e);
+    if (!baseUrl) {
+      throw new Error('Scenario API base URL is unavailable.');
     }
+    const res = await fetch(`${baseUrl}/scenarios/${id}/run`, { method: 'POST' });
+    if (!res.ok) {
+      throw new Error(`Failed to run scenario (${res.status})`);
+    }
+    // In a real app, we'd subscribe to progress updates
   }, [baseUrl]);
 
   useEffect(() => {
