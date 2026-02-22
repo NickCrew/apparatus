@@ -96,6 +96,91 @@ export const swaggerDocument = {
         }
       }
     },
+    "/api/redteam/fuzzer/run": {
+      "post": {
+        "tags": ["Security"],
+        "summary": "Execute One Live Fuzzer Request",
+        "description": "Run a single operator-defined request against a target and return normalized response telemetry. Targets are loopback-only unless APPARATUS_FUZZER_ALLOWED_TARGETS is configured.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "target": { "type": "string", "description": "Base URL. Defaults to current Apparatus host." },
+                  "path": { "type": "string", "default": "/echo" },
+                  "method": { "type": "string", "default": "GET" },
+                  "headers": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                  },
+                  "query": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }]
+                    }
+                  },
+                  "body": { "description": "Arbitrary request body forwarded upstream for body-capable methods." },
+                  "timeoutMs": { "type": "number", "default": 5000 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Execution metadata and normalized response output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "object",
+                      "properties": {
+                        "method": { "type": "string" },
+                        "url": { "type": "string" },
+                        "timeoutMs": { "type": "number" },
+                        "hasBody": { "type": "boolean" }
+                      }
+                    },
+                    "response": {
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "number", "nullable": true },
+                        "blocked": { "type": "boolean" },
+                        "durationMs": { "type": "number" },
+                        "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+                        "bodyBytes": { "type": "number", "description": "Bytes observed before capture limits are applied." },
+                        "bodyPreview": { "type": "string" },
+                        "bodyTruncated": { "type": "boolean" },
+                        "error": { "type": "string" },
+                        "errorCode": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Security gate blocked non-local request origin" }
+        }
+      }
+    },
     "/sentinel/rules": {
       "get": {
         "tags": ["Defense"],
