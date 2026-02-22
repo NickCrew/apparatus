@@ -159,7 +159,7 @@ export function Sidebar() {
       <div className="h-14 flex items-center justify-between px-5 border-b border-neutral-800/40">
         {!sidebarCollapsed && (
           <img
-            src="/assets/logo/apparatus-logo.svg"
+            src="/logo/apparatus-logo.svg"
             alt="Apparatus"
             className="h-7"
           />
