@@ -3,19 +3,24 @@ import { request } from "undici";
 import { chat } from "./client.js";
 import { cfg } from "../config.js";
 import {
+    addObjectiveProgressSignal,
     addAction,
     addFinding,
     addThought,
     createSession,
+    getSessionContext,
     getLatestSession,
     getSession,
     listReports,
     resetRedTeamStoreForTests,
     RuntimeSnapshot,
     setSessionState,
+    upsertSessionAsset,
+    upsertSessionObservation,
+    upsertSessionRelation,
     updateSession,
 } from "./report-store.js";
-import { executeToolStep, resetToolExecutorForTests, stopAllActiveExperiments, ToolAction } from "../tool-executor.js";
+import { executeToolStep, resetToolExecutorForTests, stopAllActiveExperiments, ToolAction, ToolExecutionResult } from "../tool-executor.js";
 import { logger } from "../logger.js";
 
 const ALL_TOOLS: ToolAction[] = ["cluster.attack", "chaos.cpu", "chaos.memory", "mtd.rotate", "delay", "chaos.crash"];
@@ -40,6 +45,50 @@ interface SessionControl {
     maxIterations: number;
     allowedTools: ToolAction[];
 }
+
+interface VerificationSummary {
+    broken: boolean;
+    crashDetected: boolean;
+    newServerErrors: number;
+    notes: string;
+}
+
+interface PlannerMemorySummary {
+    totals: {
+        assets: number;
+        observations: number;
+        relations: number;
+    };
+    recentAssets: Array<{
+        type: string;
+        value: string;
+        source: string;
+        confidence: number;
+    }>;
+    recentObservations: Array<{
+        kind: string;
+        source: string;
+        summary: string;
+    }>;
+    recentRelations: Array<{
+        type: string;
+        from: string;
+        to: string;
+    }>;
+    objectiveProgress: {
+        preconditionsMet: string[];
+        openedPaths: string[];
+        breakSignals: string[];
+    };
+}
+
+const MEMORY_PROMPT_LIMITS = {
+    assets: 8,
+    observations: 8,
+    relations: 8,
+    progressSignals: 8,
+    textLength: 160,
+} as const;
 
 let activeControl: SessionControl | null = null;
 let startingSession = false;
@@ -218,6 +267,259 @@ function isSafeAttackPath(pathname: string) {
     return !BLOCKED_ATTACK_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
+function parseTargetPath(value: unknown) {
+    if (typeof value !== "string" || !value.trim()) return null;
+    try {
+        const parsed = new URL(value);
+        if (!isSafeAttackPath(parsed.pathname)) return null;
+        return parsed.pathname;
+    } catch {
+        return null;
+    }
+}
+
+function truncateText(value: string, maxLength: number) {
+    if (value.length <= maxLength) return value;
+    return `${value.slice(0, maxLength - 3)}...`;
+}
+
+function lastItems<T>(items: T[], max: number) {
+    if (items.length <= max) return [...items];
+    return items.slice(items.length - max);
+}
+
+function buildPlannerMemorySummary(sessionId: string): PlannerMemorySummary | null {
+    const context = getSessionContext(sessionId);
+    if (!context) return null;
+
+    return {
+        totals: {
+            assets: context.assets.length,
+            observations: context.observations.length,
+            relations: context.relations.length,
+        },
+        recentAssets: lastItems(context.assets, MEMORY_PROMPT_LIMITS.assets).map((asset) => ({
+            type: asset.type,
+            value: truncateText(asset.value, MEMORY_PROMPT_LIMITS.textLength),
+            source: asset.source,
+            confidence: Number(asset.confidence.toFixed(2)),
+        })),
+        recentObservations: lastItems(context.observations, MEMORY_PROMPT_LIMITS.observations).map((item) => ({
+            kind: item.kind,
+            source: item.source,
+            summary: truncateText(item.summary, MEMORY_PROMPT_LIMITS.textLength),
+        })),
+        recentRelations: lastItems(context.relations, MEMORY_PROMPT_LIMITS.relations).map((relation) => ({
+            type: relation.type,
+            from: truncateText(relation.fromAssetId, MEMORY_PROMPT_LIMITS.textLength),
+            to: truncateText(relation.toAssetId, MEMORY_PROMPT_LIMITS.textLength),
+        })),
+        objectiveProgress: {
+            preconditionsMet: lastItems(context.objectiveProgress.preconditionsMet, MEMORY_PROMPT_LIMITS.progressSignals),
+            openedPaths: lastItems(context.objectiveProgress.openedPaths, MEMORY_PROMPT_LIMITS.progressSignals),
+            breakSignals: lastItems(context.objectiveProgress.breakSignals, MEMORY_PROMPT_LIMITS.progressSignals),
+        },
+    };
+}
+
+function composePlannerPayload(control: SessionControl, snapshot: RuntimeSnapshot, iteration: number, memory: PlannerMemorySummary | null) {
+    return {
+        objective: control.objective,
+        iteration,
+        telemetry: snapshot,
+        guardrails: {
+            allowedTools: control.allowedTools,
+            forbidCrashByDefault: !control.allowedTools.includes("chaos.crash"),
+        },
+        memory,
+    };
+}
+
+function shouldPauseForBreakSignals(memory: PlannerMemorySummary | null) {
+    return (memory?.objectiveProgress.breakSignals.length || 0) > 0;
+}
+
+function safeCaptureMemory(sessionId: string, phase: "act" | "verify", callback: () => void) {
+    try {
+        callback();
+    } catch (error: any) {
+        logger.warn({ sessionId, phase, error: error?.message || "unknown error" }, "Autopilot memory capture failed");
+    }
+}
+
+function captureActionMemory(args: {
+    sessionId: string;
+    iteration: number;
+    objective: string;
+    decision: Decision;
+    execution?: ToolExecutionResult;
+}) {
+    const objectivePath = pickTargetPath(args.objective);
+    const objectiveAsset = upsertSessionAsset(args.sessionId, {
+        type: "endpoint",
+        value: objectivePath,
+        source: "objective",
+        confidence: 0.7,
+        metadata: { iteration: args.iteration },
+    });
+    addObjectiveProgressSignal(args.sessionId, "openedPaths", objectivePath);
+
+    if (args.decision.tool === "none") {
+        upsertSessionObservation(args.sessionId, {
+            kind: "system",
+            source: "planner",
+            summary: `Iteration ${args.iteration}: no tool selected`,
+            details: {
+                iteration: args.iteration,
+                reason: args.decision.reason,
+            },
+        });
+        return;
+    }
+
+    const summary = args.execution
+        ? (args.execution.ok ? args.execution.message : `Tool failed: ${args.execution.message}`)
+        : `Tool selected: ${args.decision.tool}`;
+
+    upsertSessionObservation(args.sessionId, {
+        kind: "tool-output",
+        source: args.decision.tool,
+        summary,
+        details: {
+            iteration: args.iteration,
+            ok: args.execution?.ok ?? true,
+            reason: args.decision.reason,
+            params: args.decision.params,
+            error: args.execution?.error,
+        },
+    });
+
+    if (args.decision.tool === "cluster.attack") {
+        const targetPath = parseTargetPath(args.decision.params.target);
+        if (targetPath) {
+            const targetAsset = upsertSessionAsset(args.sessionId, {
+                type: "endpoint",
+                value: targetPath,
+                source: "cluster.attack",
+                confidence: 0.8,
+                metadata: {
+                    iteration: args.iteration,
+                    target: args.decision.params.target,
+                },
+            });
+            if (objectiveAsset?.id && targetAsset?.id) {
+                upsertSessionRelation(args.sessionId, {
+                    type: "targets",
+                    fromAssetId: objectiveAsset.id,
+                    toAssetId: targetAsset.id,
+                    source: "cluster.attack",
+                    confidence: 0.7,
+                    metadata: { iteration: args.iteration },
+                });
+            }
+        }
+    }
+
+    if (args.execution && !args.execution.ok) {
+        addObjectiveProgressSignal(args.sessionId, "breakSignals", `tool-failure:${args.decision.tool}`);
+        upsertSessionAsset(args.sessionId, {
+            type: "indicator",
+            value: `tool-failure:${args.decision.tool}`,
+            source: args.decision.tool,
+            confidence: 0.8,
+            metadata: {
+                iteration: args.iteration,
+                message: args.execution.message,
+            },
+        });
+    }
+}
+
+function captureVerificationMemory(args: {
+    sessionId: string;
+    iteration: number;
+    objective: string;
+    verification: VerificationSummary;
+    after: RuntimeSnapshot;
+}) {
+    const objectivePath = pickTargetPath(args.objective);
+    const objectiveAsset = upsertSessionAsset(args.sessionId, {
+        type: "endpoint",
+        value: objectivePath,
+        source: "objective",
+        confidence: 0.7,
+        metadata: { iteration: args.iteration },
+    });
+
+    upsertSessionObservation(args.sessionId, {
+        kind: "verification",
+        source: "verification",
+        summary: args.verification.notes,
+        details: {
+            iteration: args.iteration,
+            broken: args.verification.broken,
+            crashDetected: args.verification.crashDetected,
+            newServerErrors: args.verification.newServerErrors,
+            telemetry: {
+                rps: args.after.rps,
+                errorRate: args.after.errorRate,
+                avgLatencyMs: args.after.avgLatencyMs,
+            },
+        },
+    });
+
+    if (args.verification.crashDetected) {
+        const crashAsset = upsertSessionAsset(args.sessionId, {
+            type: "indicator",
+            value: "service-health-check-failed",
+            source: "verification",
+            confidence: 0.95,
+            metadata: { iteration: args.iteration },
+        });
+        addObjectiveProgressSignal(args.sessionId, "breakSignals", "service-health-check-failed");
+        if (objectiveAsset?.id && crashAsset?.id) {
+            upsertSessionRelation(args.sessionId, {
+                type: "confirms",
+                fromAssetId: objectiveAsset.id,
+                toAssetId: crashAsset.id,
+                source: "verification",
+                confidence: 0.9,
+                metadata: { iteration: args.iteration },
+            });
+        }
+    }
+
+    if (args.verification.newServerErrors > 0) {
+        const errorAsset = upsertSessionAsset(args.sessionId, {
+            type: "vuln",
+            value: `new-5xx-errors:${args.verification.newServerErrors}`,
+            source: "verification",
+            confidence: 0.85,
+            metadata: {
+                iteration: args.iteration,
+                newServerErrors: args.verification.newServerErrors,
+            },
+        });
+        addObjectiveProgressSignal(args.sessionId, "breakSignals", `new-5xx-errors:${args.verification.newServerErrors}`);
+        if (objectiveAsset?.id && errorAsset?.id) {
+            upsertSessionRelation(args.sessionId, {
+                type: "escalates_to",
+                fromAssetId: objectiveAsset.id,
+                toAssetId: errorAsset.id,
+                source: "verification",
+                confidence: 0.85,
+                metadata: { iteration: args.iteration },
+            });
+        }
+    }
+
+    if (args.verification.broken) {
+        addObjectiveProgressSignal(args.sessionId, "breakSignals", args.verification.notes);
+    } else {
+        addObjectiveProgressSignal(args.sessionId, "preconditionsMet", "no-break-detected");
+    }
+}
+
 function fallbackDecision(snapshot: RuntimeSnapshot, control: SessionControl, iteration: number): Decision {
     const attackTarget = buildUrl(control.baseUrl, pickTargetPath(control.objective));
 
@@ -329,8 +631,23 @@ function sanitizeDecision(candidate: Decision, control: SessionControl): Decisio
     return { ...candidate, tool: "none", params: {} };
 }
 
-async function decideNextAction(control: SessionControl, snapshot: RuntimeSnapshot, iteration: number): Promise<Decision> {
+async function decideNextAction(
+    control: SessionControl,
+    snapshot: RuntimeSnapshot,
+    iteration: number,
+    memory: PlannerMemorySummary | null
+): Promise<Decision> {
     const fallback = fallbackDecision(snapshot, control, iteration);
+
+    if (shouldPauseForBreakSignals(memory)) {
+        return sanitizeDecision({
+            thought: "Prior break signals were already detected. Pause briefly before further escalation.",
+            reason: "Session memory indicates break conditions",
+            tool: control.allowedTools.includes("delay") ? "delay" : "none",
+            params: { duration: 750 },
+            rawModelOutput: "memory:break-signals",
+        }, control);
+    }
 
     const systemPrompt = [
         "You are an autonomous reliability red-team strategist.",
@@ -340,15 +657,7 @@ async function decideNextAction(control: SessionControl, snapshot: RuntimeSnapsh
         "tool must be one of allowed tools or 'none'.",
     ].join(" ");
 
-    const userPrompt = JSON.stringify({
-        objective: control.objective,
-        iteration,
-        telemetry: snapshot,
-        guardrails: {
-            allowedTools: control.allowedTools,
-            forbidCrashByDefault: !control.allowedTools.includes("chaos.crash"),
-        }
-    });
+    const userPrompt = JSON.stringify(composePlannerPayload(control, snapshot, iteration, memory));
 
     try {
         const response = await chat(`autopilot-${control.sessionId}`, systemPrompt, userPrompt);
@@ -382,7 +691,7 @@ function summarizeVerification(base: {
     before: RuntimeSnapshot;
     after: RuntimeSnapshot;
     healthAfter: boolean;
-}) {
+}): VerificationSummary {
     const newErrors = Math.max(0, base.after.errorCount - base.before.errorCount);
     const crashDetected = !base.healthAfter;
     const broken = crashDetected || newErrors > 0;
@@ -440,14 +749,16 @@ async function runMission(control: SessionControl) {
                 "decide",
                 `Telemetry: ${before.rps.toFixed(1)} RPS, ${before.avgLatencyMs.toFixed(1)}ms latency, ${(before.errorRate * 100).toFixed(2)}% errors.`
             );
-            const decision = await decideNextAction(control, before, iteration);
+            const memorySummary = buildPlannerMemorySummary(control.sessionId);
+            const decision = await decideNextAction(control, before, iteration, memorySummary);
             addThought(control.sessionId, "decide", decision.thought);
 
             if (control.stopRequested || control.killRequested) break;
 
+            let execution: ToolExecutionResult | undefined;
             if (decision.tool !== "none") {
                 addThought(control.sessionId, "act", `Executing ${decision.tool}.`);
-                const execution = await executeToolStep({
+                execution = await executeToolStep({
                     id: `rt-${control.sessionId}-${iteration}`,
                     action: decision.tool,
                     params: decision.params,
@@ -468,6 +779,16 @@ async function runMission(control: SessionControl) {
             } else {
                 addThought(control.sessionId, "act", "Skipping tool execution for this iteration.");
             }
+
+            safeCaptureMemory(control.sessionId, "act", () => {
+                captureActionMemory({
+                    sessionId: control.sessionId,
+                    iteration,
+                    objective: control.objective,
+                    decision,
+                    execution,
+                });
+            });
 
             if (control.stopRequested || control.killRequested) break;
 
@@ -492,6 +813,15 @@ async function runMission(control: SessionControl) {
             });
 
             addThought(control.sessionId, "report", verification.notes);
+            safeCaptureMemory(control.sessionId, "verify", () => {
+                captureVerificationMemory({
+                    sessionId: control.sessionId,
+                    iteration,
+                    objective: control.objective,
+                    verification,
+                    after,
+                });
+            });
 
             if (verification.broken) {
                 setSessionState(control.sessionId, "completed", {
@@ -713,4 +1043,76 @@ export function sanitizeDecisionForTests(candidate: {
         maxIterations: 1,
         ...context,
     });
+}
+
+export function captureActionMemoryForTests(input: {
+    sessionId: string;
+    iteration: number;
+    objective: string;
+    decision: {
+        thought: string;
+        reason: string;
+        tool: ToolAction | "none";
+        params: Record<string, unknown>;
+    };
+    execution?: {
+        ok: boolean;
+        action: ToolAction;
+        message: string;
+        startedAt: string;
+        endedAt: string;
+        error?: string;
+    };
+}) {
+    captureActionMemory({
+        sessionId: input.sessionId,
+        iteration: input.iteration,
+        objective: input.objective,
+        decision: {
+            ...input.decision,
+            rawModelOutput: "test",
+        },
+        execution: input.execution,
+    });
+}
+
+export function captureVerificationMemoryForTests(input: {
+    sessionId: string;
+    iteration: number;
+    objective: string;
+    verification: {
+        broken: boolean;
+        crashDetected: boolean;
+        newServerErrors: number;
+        notes: string;
+    };
+    after: RuntimeSnapshot;
+}) {
+    captureVerificationMemory(input);
+}
+
+export function buildPlannerMemorySummaryForTests(sessionId: string) {
+    return buildPlannerMemorySummary(sessionId);
+}
+
+export function composePlannerPayloadForTests(input: {
+    control: {
+        sessionId: string;
+        stopRequested: boolean;
+        killRequested: boolean;
+        baseUrl: string;
+        objective: string;
+        intervalMs: number;
+        maxIterations: number;
+        allowedTools: ToolAction[];
+    };
+    snapshot: RuntimeSnapshot;
+    iteration: number;
+    memory: PlannerMemorySummary | null;
+}) {
+    return composePlannerPayload(input.control, input.snapshot, input.iteration, input.memory);
+}
+
+export function shouldPauseForBreakSignalsForTests(memory: ReturnType<typeof buildPlannerMemorySummary>) {
+    return shouldPauseForBreakSignals(memory);
 }
