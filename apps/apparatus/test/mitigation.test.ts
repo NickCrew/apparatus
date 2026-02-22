@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
-import { blackholeMiddleware, blackholedIps, resetBlackholeState } from '../src/blackhole.js';
+import { blackholeAddHandler, blackholeMiddleware, blackholeReleaseHandler, blackholedIps, resetBlackholeState } from '../src/blackhole.js';
 import { blockedIps } from '../src/tarpit.js';
+import { logger } from '../src/logger.js';
 import * as sse from '../src/sse-broadcast.js';
 
 describe('mitigation controls', () => {
@@ -458,8 +459,9 @@ describe('mitigation controls', () => {
             latencyMs: 0,
             blockedBy: 'blackhole',
             path: '/blackholefoo',
-            timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+            timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
         }));
+        expect(broadcastSpy).toHaveBeenCalledTimes(3);
     });
 
     it('does not allow encoded management-prefix bypasses', () => {
@@ -480,6 +482,26 @@ describe('mitigation controls', () => {
         expect(next).not.toHaveBeenCalled();
         expect(status).toHaveBeenCalledWith(403);
         expect(json).toHaveBeenCalledWith(expect.objectContaining({ ip: '198.51.100.89' }));
+    });
+
+    it('does not allow case-variant management-prefix bypasses', () => {
+        blackholedIps.add('198.51.100.92');
+        const req = {
+            ip: '198.51.100.92',
+            socket: { remoteAddress: '198.51.100.92' },
+            method: 'GET',
+            path: '/Blackhole',
+        } as any;
+        const status = vi.fn().mockReturnThis();
+        const json = vi.fn().mockReturnThis();
+        const res = { status, json } as any;
+        const next = vi.fn();
+
+        blackholeMiddleware(req, res, next);
+
+        expect(next).not.toHaveBeenCalled();
+        expect(status).toHaveBeenCalledWith(403);
+        expect(json).toHaveBeenCalledWith(expect.objectContaining({ ip: '198.51.100.92' }));
     });
 
     it('still returns 403 when SSE broadcast throws', () => {
@@ -538,6 +560,27 @@ describe('mitigation controls', () => {
         }
     });
 
+    it('computes independent durations for multiple blocked IPs', async () => {
+        const app = createApp();
+        let now = 3_000_000;
+        const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => now);
+        try {
+            await request(app).post('/blackhole').send({ ip: '198.51.100.160' }).expect(200);
+            now += 3_000;
+            await request(app).post('/blackhole').send({ ip: '198.51.100.161' }).expect(200);
+            now += 4_000;
+
+            const list = await request(app).get('/blackhole');
+            expect(list.status).toBe(200);
+            const entryA = list.body.blocked.find((item: { ip: string }) => item.ip === '198.51.100.160');
+            const entryB = list.body.blocked.find((item: { ip: string }) => item.ip === '198.51.100.161');
+            expect(entryA.duration).toBe(7);
+            expect(entryB.duration).toBe(4);
+        } finally {
+            nowSpy.mockRestore();
+        }
+    });
+
     it('re-adds with a fresh blockedAt after single release and clear-all release', async () => {
         const app = createApp();
         let now = 10_000;
@@ -574,5 +617,38 @@ describe('mitigation controls', () => {
         expect(list.status).toBe(200);
         expect(list.body.count).toBe(0);
         expect(list.body.blocked).toEqual([]);
+    });
+
+    it('emits expected logger severity for add, single release, and clear-all release', () => {
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => logger as any);
+        const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => logger as any);
+        const status = vi.fn().mockReturnThis();
+        const json = vi.fn().mockReturnThis();
+        const res = { status, json } as any;
+
+        blackholeAddHandler({ body: { ip: '198.51.100.170' } } as any, res);
+        blackholeAddHandler({ body: { ip: '198.51.100.170' } } as any, res);
+        blackholeReleaseHandler({ body: { ip: '198.51.100.170' } } as any, res);
+        blackholeAddHandler({ body: { ip: '198.51.100.171' } } as any, res);
+        blackholeReleaseHandler({ body: {} } as any, res);
+
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ ip: '198.51.100.170' }),
+            expect.stringContaining('blocked globally')
+        );
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ ip: '198.51.100.171' }),
+            expect.stringContaining('blocked globally')
+        );
+        expect(warnSpy).toHaveBeenCalledTimes(2);
+
+        expect(infoSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ ip: '198.51.100.170' }),
+            expect.stringContaining('IP released')
+        );
+        expect(infoSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ count: 1 }),
+            expect.stringContaining('all IPs released')
+        );
     });
 });
