@@ -97,9 +97,14 @@ export function HelpResults({ query, onSelect }: HelpResultsProps) {
           key={result.id}
           value={`${result.id} ${result.title} ${result.category} ${query}`}
           onSelect={() => {
+            console.log('Help result selected:', result.id, result.title);
             onSelect?.(result.id);
           }}
-          className="flex flex-col items-start gap-1 py-3"
+          onClick={() => {
+            console.log('Help result clicked:', result.id, result.title);
+            onSelect?.(result.id);
+          }}
+          className="flex flex-col items-start gap-1 py-3 cursor-pointer hover:bg-neutral-800/50"
         >
           <div className="flex items-center gap-2 w-full">
             <BookOpen className="h-4 w-4 flex-shrink-0 text-blue-500" />

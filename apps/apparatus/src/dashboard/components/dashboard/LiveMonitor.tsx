@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Wifi, Search, Play, StopCircle, Trash2 } from 'lucide-react';
+import { Wifi, Search, Play, StopCircle, Trash2, ChefHat } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { useApparatus } from '../../providers/ApparatusProvider';
 import { cn } from '../ui/cn';
+import { generateCyberChefUrl } from '../../utils/cyberchef';
 
 interface PacketEvent {
   timestamp: string;
@@ -99,11 +100,18 @@ export function LiveMonitor() {
         ) : (
           <div className="divide-y divide-white/[0.03]">
             {packets.map((p, i) => (
-              <div key={i} className="p-2 hover:bg-white/[0.02] transition-colors group">
-                <div className="flex gap-3 items-start">
+              <div key={i} className="p-2 hover:bg-white/[0.02] transition-colors group relative">
+                <div className="flex gap-3 items-start pr-10">
                   <span className="text-neutral-700 font-bold shrink-0">{p.timestamp.split('T')[1].split('.')[0]}</span>
                   <span className="text-neutral-300 break-all leading-relaxed">{p.raw}</span>
                 </div>
+                <button 
+                  onClick={() => window.open(generateCyberChefUrl(p.raw), '_blank', 'noopener')}
+                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-primary/10 rounded-sm text-primary/60 hover:text-primary"
+                  title="Analyze packet in CyberChef"
+                >
+                  <ChefHat className="h-3 w-3" />
+                </button>
               </div>
             ))}
           </div>
