@@ -13,14 +13,19 @@
 
 ---
 
-## Newly Added Tutorials (2 docs, ~1.8k lines)
+## Newly Added Tutorials (5 docs, ~4.8k lines)
 
 | Tutorial | Lines | Audience | Status |
 |----------|-------|----------|--------|
 | `tutorial-autopilot.md` | ~950 | Red teamers, security engineers | ✅ **ADDED** |
 | `tutorial-defense-rules.md` | ~850 | Defenders, DevSecOps, security ops | ✅ **ADDED** |
+| `tutorial-live-payload-fuzzer.md` | ~1100 | Security testers, pentesters, API developers | ✅ **NEW** |
+| `tutorial-testing-lab.md` | ~1200 | QA engineers, security engineers | ✅ **NEW** |
+| `tutorial-attacker-fingerprinting.md` | ~1300 | SOC analysts, incident responders | ✅ **NEW** |
 
 ### What These Cover
+
+**Previously Added:**
 
 **Red Team Autopilot Tutorial:**
 - Hands-on: Launch AI red team campaigns
@@ -40,17 +45,47 @@
 - Advanced rule tuning and specificity
 - Troubleshooting false positives
 
+**Live Payload Fuzzer Tutorial (NEW):**
+- Interactive HTTP request builder for manual security testing
+- Crafting payloads (XSS, SQLi, command injection, path traversal, NoSQL injection)
+- Testing query parameters, headers, and request bodies
+- Understanding defense classifications (blocked vs. passed)
+- Measuring and interpreting latency/tarpit behavior
+- Multi-tool workflows (validation, debugging, testing)
+- Best practices and common attack scenarios
+- Exercises: API exploration, WAF rule validation, defense performance testing
+
+**Testing Lab Tutorial (NEW):**
+- Unified security testing hub combining k6, Nuclei, and Escape Artist
+- Load testing with k6 (interpreting throughput, latency, errors)
+- Vulnerability scanning with Nuclei (severity levels, remediation)
+- Egress validation with Escape Artist (data exfiltration testing)
+- Multi-tool workflows: comprehensive security assessment
+- Real-world scenarios (pre-production audits, compliance checks, incident validation)
+- Troubleshooting tool integration issues
+- Best practices: layered testing, baselining, defense improvement
+
+**Attacker Fingerprinting Tutorial (NEW):**
+- Real-time threat monitoring and incident response
+- Understanding risk scores, attacker categories, and classifications
+- Analyzing attacker profiles and protocol heatmaps
+- Taking response actions (tarpit, blackhole, release)
+- Incident response workflow (identify → profile → assess → act → document)
+- Building threat intelligence and trend analysis
+- Setting up alerts and monitoring metrics
+- Best practices: documentation, false positives, cross-system correlation
+
 ---
 
 ## Remaining Documentation Gaps
 
 ### High Priority (Critical for Getting Started)
 
-| Gap | Use Case | Estimated Effort | Recommended Audience |
-|-----|----------|------------------|----------------------|
-| **Web Dashboard User Guide** | How to use UI, navigate consoles, command palette | ~45 min | All users |
-| **Scenario Creation Tutorial** | Build custom multi-step attack sequences | ~45 min | Red teamers, researchers |
-| **Chaos Engineering Playbook** | Resilience testing, fault injection | ~40 min | DevSecOps, SREs |
+| Gap | Use Case | Estimated Effort | Recommended Audience | Status |
+|-----|----------|------------------|----------------------|--------|
+| **Web Dashboard User Guide** | How to use UI, navigate consoles, command palette | ~45 min | All users | ⏳ In Progress |
+| **Scenario Creation Tutorial** | Build custom multi-step attack sequences | ~45 min | Red teamers, researchers | ⏳ Planned |
+| **Chaos Engineering Playbook** | Resilience testing, fault injection | ~40 min | DevSecOps, SREs | ⏳ Planned |
 
 ### Medium Priority (Enhances Workflows)
 

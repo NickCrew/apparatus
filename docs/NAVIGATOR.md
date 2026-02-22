@@ -19,6 +19,9 @@ Welcome! This guide helps you find the right documentation for your needs.
 - **[Tutorial: Autopilot](tutorial-autopilot.md)** — Red team autonomous agent
 - **[Tutorial: Monitoring](tutorial-monitoring.md)** — Metrics, dashboards, and observability
 - **[Tutorial: Scenarios](tutorial-scenarios.md)** — Multi-step testing scenarios
+- **[Tutorial: Live Payload Fuzzer](tutorial-live-payload-fuzzer.md)** — Interactive API & payload testing
+- **[Tutorial: Testing Lab](tutorial-testing-lab.md)** — Unified security testing (k6, Nuclei, Escape Artist)
+- **[Tutorial: Attacker Fingerprinting](tutorial-attacker-fingerprinting.md)** — Real-time threat monitoring & response
 
 ### Reference & Architecture
 - **[Architecture Guide](architecture.md)** — System design, component details, performance
@@ -59,6 +62,15 @@ Welcome! This guide helps you find the right documentation for your needs.
 #### Integrate Webhooks
 → **[Tutorial: Webhooks](tutorial-webhooks.md)**
 
+#### Test APIs and Payloads Manually
+→ **[Tutorial: Live Payload Fuzzer](tutorial-live-payload-fuzzer.md)**
+
+#### Run Security Tests (Load, Vulnerabilities, Egress)
+→ **[Tutorial: Testing Lab](tutorial-testing-lab.md)**
+
+#### Monitor and Respond to Attacks
+→ **[Tutorial: Attacker Fingerprinting](tutorial-attacker-fingerprinting.md)**
+
 #### Troubleshoot Issues
 → **[Quick Reference](quick-reference.md)** → Troubleshooting section
 
@@ -87,6 +99,9 @@ docs/
 ├── tutorial-autopilot.md .................. AI red team automation
 ├── tutorial-monitoring.md ................. Metrics & observability
 ├── tutorial-scenarios.md .................. Multi-step scenarios
+├── tutorial-live-payload-fuzzer.md ........ Interactive API & payload testing
+├── tutorial-testing-lab.md ................ Unified security testing hub
+├── tutorial-attacker-fingerprinting.md .... Real-time threat monitoring
 │
 └── DOCUMENTATION_ROADMAP.md .............. Future documentation plans
 ```
@@ -200,6 +215,9 @@ docs/
 | tutorial-autopilot.md | AI red team | Advanced users | ✅ Current |
 | tutorial-monitoring.md | Monitoring & metrics | DevOps/SRE | ✅ Current |
 | tutorial-scenarios.md | Scenario creation | Advanced users | ✅ Current |
+| tutorial-live-payload-fuzzer.md | API/payload testing | Security testers | ✅ New |
+| tutorial-testing-lab.md | Unified testing (k6/Nuclei) | QA/Security engineers | ✅ New |
+| tutorial-attacker-fingerprinting.md | Threat monitoring & response | SOC/Incident response | ✅ New |
 
 ---
 
