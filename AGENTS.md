@@ -27,3 +27,8 @@ You MUST read the overview resource to understand the complete workflow. The inf
 </CRITICAL_INSTRUCTION>
 
 <!-- BACKLOG.MD MCP GUIDELINES END -->
+
+## Skills Source Of Truth
+
+- Use the global `agent-loops` skill at `~/.codex/skills/agent-loops`.
+- Do not recreate or rely on a repo-local `.agents/skills/agent-loops` copy in this repository.
