@@ -191,7 +191,7 @@ export function Sidebar() {
         {!sidebarCollapsed && (
           <div className="flex items-center gap-2.5">
             <img
-              src={`${import.meta.env.BASE_URL}assets/logo/apparatus-icon-light.svg`}
+              src={`${import.meta.env.BASE_URL}assets/icons/apparatus-icon.svg`}
               alt="Apparatus"
               className="h-9 w-auto"
             />

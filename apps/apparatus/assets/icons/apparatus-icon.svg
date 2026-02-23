@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="110" height="110" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+  <rect width="110" height="110" fill="#0c111c"/>
+  <!-- Broken ring -->
+  <path d="M30,85 A35,35 0 1,1 80,85" fill="none" stroke="#38a0ff" stroke-width="6" stroke-linecap="square"/>
+  <!-- Waveform -->
+  <polyline points="38,55 44,42 50,58 56,38 62,62 68,45 74,55" fill="none" stroke="#6cb4ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- A crossbar -->
+  <line x1="30" y1="85" x2="80" y2="85" stroke="#38a0ff" stroke-width="3" opacity="0.4"/>
+  <!-- Corner brackets -->
+  <g stroke="#6d85a0" stroke-width="1.5" fill="none" opacity="0.3">
+    <polyline points="8,20 8,8 20,8"/>
+    <polyline points="90,8 102,8 102,20"/>
+    <polyline points="102,90 102,102 90,102"/>
+    <polyline points="20,102 8,102 8,90"/>
+  </g>
+</svg>
