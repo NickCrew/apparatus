@@ -63,7 +63,7 @@ function Layout() {
   return (
     <TerminalBootGate>
       <div 
-        className="crt-shell flex h-screen bg-neutral-950 text-neutral-100 font-sans antialiased selection:bg-primary-500/30 overflow-hidden"
+        className="crt-shell type-body flex h-screen bg-neutral-950 text-neutral-100 font-sans antialiased selection:bg-primary-500/30 overflow-hidden"
         style={{ '--ui-radius': uiRadius } as React.CSSProperties}
       >
         <div aria-hidden className="crt-chromatic-layer" />

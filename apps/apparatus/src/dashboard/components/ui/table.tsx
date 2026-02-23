@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { cn } from "./cn"
+import { typographyRole } from "./typography"
 
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -9,7 +10,7 @@ const Table = React.forwardRef<
   <div className="relative w-full overflow-auto">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-sm font-mono", className)}
+      className={cn("w-full caption-bottom text-sm", typographyRole("data"), className)}
       {...props}
     />
   </div>

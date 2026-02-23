@@ -53,9 +53,9 @@ const config = {
         ops: colors.ops,
       },
       fontFamily: {
-        display: ['Recursive', 'Rajdhani', 'system-ui', 'sans-serif'],
-        sans: ['Recursive', 'Outfit', 'system-ui', 'sans-serif'],
-        mono: ['Recursive', 'JetBrains Mono', 'Menlo', 'monospace'],
+        display: ['Recursive', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Recursive', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['Recursive', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       fontSize: {
         'display-lg': ['2.25rem', { lineHeight: '1.1', letterSpacing: '-0.01em', fontWeight: '600' }],

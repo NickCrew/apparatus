@@ -26,6 +26,7 @@ import {
   PanelLeftOpen,
 } from 'lucide-react';
 import { cn } from '../ui/cn';
+import { typographyRole } from '../ui/typography';
 import { useApparatus } from '../../providers/ApparatusProvider';
 import {
   HUD_STATE_CHANGED_EVENT,
@@ -195,7 +196,7 @@ export function Sidebar() {
               alt="Apparatus"
               className="h-9 w-auto"
             />
-            <span className="text-lg font-display font-semibold text-neutral-200 tracking-wide">
+            <span className={cn("text-lg text-neutral-200", typographyRole("subhead"))}>
               Apparatus
             </span>
           </div>
@@ -220,7 +221,10 @@ export function Sidebar() {
             <div key={section.title} className="mb-1">
               <button
                 onClick={() => toggleSection(section.title)}
-                className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-display font-semibold text-neutral-500 hover:text-neutral-300 transition-colors uppercase tracking-widest"
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-2 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors uppercase",
+                  typographyRole("label")
+                )}
               >
                 <span>{section.title}</span>
                 {expandedSections.has(section.title) ? (
@@ -238,12 +242,12 @@ export function Sidebar() {
                         end={path === '/'}
                         className={({ isActive }) =>
                           cn(
-                            'flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium relative rounded-[3px]',
+                            'flex items-center gap-2.5 px-3 py-2 text-[13px] relative rounded-[3px]',
                             'transition-all duration-150',
                             'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500/40',
                             isActive
-                              ? 'bg-primary-500/8 text-primary-300'
-                              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/60'
+                              ? `bg-primary-500/8 text-primary-300 ${typographyRole("navActive")}`
+                              : `text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900/60 ${typographyRole("nav")}`
                           )
                         }
                       >
@@ -257,7 +261,7 @@ export function Sidebar() {
                               "h-[15px] w-[15px] flex-shrink-0",
                               isActive ? "text-primary-400" : "text-neutral-600"
                             )} strokeWidth={1.75} />
-                            <span className="font-sans rec-tech">{label}</span>
+                            <span>{label}</span>
                           </>
                         )}
                       </NavLink>
@@ -280,7 +284,8 @@ export function Sidebar() {
               onClick={toggleHudStats}
               aria-pressed={hudStatsVisible}
               className={cn(
-                'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-sm text-[11px] font-display transition-colors',
+                'w-full flex items-center justify-between gap-2 px-3 py-2 text-[11px] rounded-sm transition-colors',
+                typographyRole("label"),
                 hudStatsVisible
                   ? 'text-primary-300 bg-primary-500/10 border border-primary-500/25'
                   : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 border border-transparent'
@@ -300,7 +305,8 @@ export function Sidebar() {
               onClick={toggleHudThoughts}
               aria-pressed={hudThoughtsVisible}
               className={cn(
-                'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-sm text-[11px] font-display transition-colors',
+                'w-full flex items-center justify-between gap-2 px-3 py-2 text-[11px] rounded-sm transition-colors',
+                typographyRole("label"),
                 hudThoughtsVisible
                   ? 'text-primary-300 bg-primary-500/10 border border-primary-500/25'
                   : 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/50 border border-transparent'
@@ -317,7 +323,7 @@ export function Sidebar() {
               )} />
             </button>
             {hudHidden && (
-              <div className="px-1 text-[10px] font-mono uppercase tracking-wide text-neutral-600">
+              <div className={cn("px-1 text-[10px] uppercase text-neutral-600", typographyRole("timestamp"))}>
                 HUD hidden
               </div>
             )}
@@ -329,7 +335,10 @@ export function Sidebar() {
           <button
             onClick={() => setShowKeyboardHints(!showKeyboardHints)}
             aria-expanded={showKeyboardHints}
-            className="w-full flex items-center justify-between text-[11px] font-display text-neutral-600 hover:text-neutral-400 transition-colors"
+            className={cn(
+              "w-full flex items-center justify-between text-[11px] text-neutral-600 hover:text-neutral-400 transition-colors",
+              typographyRole("label")
+            )}
           >
             <span>Keyboard</span>
             {showKeyboardHints ? (
@@ -343,15 +352,15 @@ export function Sidebar() {
             <div className="mt-2.5 space-y-1.5 text-[10px] text-neutral-500">
               <div className="flex justify-between items-center gap-2">
                 <span>Commands</span>
-                <kbd className="px-1 py-0.5 rounded bg-neutral-800/50 text-neutral-400 font-mono">⌘K</kbd>
+                <kbd className={cn("px-1 py-0.5 rounded bg-neutral-800/50 text-neutral-400", typographyRole("timestamp"))}>⌘K</kbd>
               </div>
               <div className="flex justify-between items-center gap-2">
                 <span>Help</span>
-                <kbd className="px-1 py-0.5 rounded bg-neutral-800/50 text-neutral-400 font-mono">⌘?</kbd>
+                <kbd className={cn("px-1 py-0.5 rounded bg-neutral-800/50 text-neutral-400", typographyRole("timestamp"))}>⌘?</kbd>
               </div>
               <div className="flex justify-between items-center gap-2">
                 <span>Close</span>
-                <kbd className="px-1 py-0.5 rounded bg-neutral-800/50 text-neutral-400 font-mono">Esc</kbd>
+                <kbd className={cn("px-1 py-0.5 rounded bg-neutral-800/50 text-neutral-400", typographyRole("timestamp"))}>Esc</kbd>
               </div>
             </div>
           )}
@@ -360,9 +369,10 @@ export function Sidebar() {
         {/* System Status */}
         <div className="px-4 py-3 border-t border-neutral-800/40">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-label font-display text-neutral-600 rec-casual">Status</span>
+            <span className={cn("text-[11px] text-neutral-600", typographyRole("label"))}>Status</span>
             <span className={cn(
-              "text-[10px] font-mono flex items-center gap-1.5 rec-casual",
+              "text-[10px] flex items-center gap-1.5",
+              typographyRole("timestamp"),
               isHealthy ? "text-success-500" : "text-danger-400"
             )}>
               <span className={cn(
@@ -382,7 +392,7 @@ export function Sidebar() {
               )}
             />
           </div>
-          <div className="mt-2.5 flex justify-between text-[10px] font-mono text-neutral-700">
+          <div className={cn("mt-2.5 flex justify-between text-[10px] text-neutral-700", typographyRole("timestamp"))}>
             <span>{health.version ? `v${health.version}` : 'v—'}</span>
             {health.latencyMs !== undefined && (
               <span className="text-neutral-400">{health.latencyMs}ms</span>
