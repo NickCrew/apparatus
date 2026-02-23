@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FlaskConical, Play, CheckCircle2, XCircle, ShieldCheck, Zap, ShieldAlert, Loader2 } from 'lucide-react';
+import { FlaskConical, Play, CheckCircle2, XCircle, ShieldCheck, Zap, ShieldAlert, Loader2, Target } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -8,6 +8,7 @@ import { cn } from '../ui/cn';
 import { useEscapeArtist } from '../../hooks/useEscapeArtist';
 import { useLabTools, LabToolOption } from '../../hooks/useLabTools';
 import { LivePayloadFuzzer } from './LivePayloadFuzzer';
+import { RedTeamValidator } from './RedTeamValidator';
 
 export function TestingLab() {
   const { runScan, lastResult, isLoading: escapeLoading } = useEscapeArtist();
@@ -267,7 +268,21 @@ export function TestingLab() {
         </div>
       </div>
 
-      <LivePayloadFuzzer />
+      <div className="space-y-6 mt-12">
+        <h2 className="text-xl font-bold text-neutral-100 font-mono flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-primary-400" />
+          Automated Red Team Validator
+        </h2>
+        <RedTeamValidator />
+      </div>
+
+      <div className="mt-12">
+        <h2 className="text-xl font-bold text-neutral-100 font-mono flex items-center gap-2 mb-6">
+          <Target className="h-5 w-5 text-primary-400" />
+          One-Shot Payload Fuzzer
+        </h2>
+        <LivePayloadFuzzer />
+      </div>
     </div>
   );
 }
