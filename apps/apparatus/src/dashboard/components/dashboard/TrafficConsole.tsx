@@ -74,26 +74,26 @@ export function TrafficConsole() {
       {/* Header / Stats Bar */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Traffic Monitor</h1>
-          <p className="text-neutral-400 text-sm mt-1 ml-2">Real-time HTTP telemetry and latency analysis.</p>
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Traffic Monitor</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2 type-body">Real-time HTTP telemetry and latency analysis.</p>
         </div>
         
         <div className="flex gap-6 items-center bg-neutral-900/50 p-3 rounded-lg border border-neutral-800">
             <div className="text-right">
-                <span className="text-[10px] text-neutral-500 uppercase block">Throughput</span>
-                <span className="text-xl font-mono text-primary-400 font-bold">{stats.rps} RPS</span>
+                <span className="text-[10px] text-neutral-500 uppercase block type-tag">Throughput</span>
+                <span className="text-xl text-primary-400 type-metric">{stats.rps} RPS</span>
             </div>
             <div className="h-8 w-px bg-neutral-800" />
             <div className="text-right">
-                <span className="text-[10px] text-neutral-500 uppercase block">Error Rate</span>
-                <span className={cn("text-xl font-mono font-bold", stats.errorRate > 5 ? "text-danger-500" : "text-success-500")}>
+                <span className="text-[10px] text-neutral-500 uppercase block type-tag">Error Rate</span>
+                <span className={cn("text-xl type-metric", stats.errorRate > 5 ? "text-danger-500" : "text-success-500")}>
                     {stats.errorRate}%
                 </span>
             </div>
             <div className="h-8 w-px bg-neutral-800" />
             <div className="text-right">
-                <span className="text-[10px] text-neutral-500 uppercase block">Avg Latency</span>
-                <span className="text-xl font-mono text-warning-400 font-bold">{stats.avgLatency}ms</span>
+                <span className="text-[10px] text-neutral-500 uppercase block type-tag">Avg Latency</span>
+                <span className="text-xl text-warning-400 type-metric">{stats.avgLatency}ms</span>
             </div>
         </div>
       </div>
@@ -115,7 +115,7 @@ export function TrafficConsole() {
                         aria-pressed={filters.has(cat)}
                         aria-label={`Filter ${cat} responses`}
                         className={cn(
-                            "px-2 py-1 text-[10px] font-mono rounded border transition-all",
+                            "px-2 py-1 text-[10px] type-tag rounded border transition-all",
                             filters.has(cat) 
                                 ? cat === '2xx' ? "bg-success-900/30 border-success-500 text-success-400"
                                 : cat === '3xx' ? "bg-info-900/30 border-info-500 text-info-400"
@@ -170,7 +170,7 @@ export function TrafficConsole() {
                 </div>
             </CardHeader>
             <CardContent ref={liveFeedScrollerRef} className="flex-1 overflow-y-auto p-0 min-h-0">
-                <div className="font-mono text-[11px]">
+                <div className="text-[11px] type-data">
                     {filteredEvents.slice(0, 50).map((ev) => {
                         const isError = ev.status >= 500;
                         const isWarning = ev.status >= 400 && ev.status < 500;

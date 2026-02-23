@@ -424,7 +424,7 @@ export function ScenarioConsole() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Scenario Engine</h1>
+        <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Scenario Engine</h1>
         <p className="text-neutral-400 text-sm mt-1 ml-2">Visual Attack/Chaos Architect for drag-and-drop scenario design.</p>
         {error && (
           <div role="alert" aria-live="assertive" className="mt-2 text-danger-400 text-xs font-mono bg-danger-900/20 p-2 rounded border border-danger-900/50">

@@ -381,7 +381,7 @@ export function Overview() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between opacity-0 animate-terminal-in stagger-1">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">
             System Overview
           </h1>
           <p className="text-neutral-400 text-sm mt-1 ml-2">

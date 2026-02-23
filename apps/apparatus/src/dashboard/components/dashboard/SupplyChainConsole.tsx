@@ -21,19 +21,19 @@ export function SupplyChainConsole() {
     <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Supply Chain Radar</h1>
-          <p className="text-neutral-400 text-sm mt-1 ml-2">Software Bill of Materials (SBOM) Infection Simulator.</p>
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Supply Chain Radar</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2 type-body">Software Bill of Materials (SBOM) Infection Simulator.</p>
         </div>
         <div className="flex gap-4">
             <div className="flex flex-col items-end">
-                <span className="text-[10px] font-mono text-neutral-500 uppercase">Health</span>
-                <span className="text-xl font-mono font-bold text-neutral-300">
+                <span className="text-[10px] type-tag text-neutral-500 uppercase">Health</span>
+                <span className="text-xl type-metric text-neutral-300">
                     {Math.round((clean / total) * 100)}%
                 </span>
             </div>
             <div className="h-8 w-px bg-neutral-800" />
             <div className="flex flex-col items-end">
-                <span className="text-[10px] font-mono text-neutral-500 uppercase">App Status</span>
+                <span className="text-[10px] type-tag text-neutral-500 uppercase">App Status</span>
                 <Badge variant={appStatus === 'clean' ? 'success' : 'danger'} dot>
                     {appStatus.toUpperCase()}
                 </Badge>
@@ -86,7 +86,7 @@ export function SupplyChainConsole() {
                             <AlertTriangle className="h-3 w-3" />
                             BLAST RADIUS
                         </div>
-                        <div className="text-2xl font-bold text-white">{compromised + infected}</div>
+                        <div className="text-2xl type-metric text-white">{compromised + infected}</div>
                         <div className="text-[10px] text-neutral-400">Total Affected Packages</div>
                     </div>
 

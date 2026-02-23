@@ -160,7 +160,7 @@ export function AutopilotConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono flex items-center gap-2 ml-2">
+          <h1 className="text-2xl text-neutral-100 type-heading flex items-center gap-2 ml-2">
             <Bot className="h-6 w-6 text-primary-400" />
             Autopilot Console
           </h1>

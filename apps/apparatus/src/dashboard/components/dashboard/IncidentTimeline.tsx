@@ -251,7 +251,7 @@ export function IncidentTimeline() {
     <div className="space-y-5 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-mono text-neutral-100 ml-2">
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">
             Incident Timeline
           </h1>
           <p className="text-sm text-neutral-400 mt-1 ml-2">

@@ -36,7 +36,7 @@ export function WebhooksConsole() {
     <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Webhook Inspector</h1>
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Webhook Inspector</h1>
           <p className="text-neutral-400 text-sm mt-1 ml-2">Capture and inspect HTTP callbacks.</p>
         </div>
         <div className="flex items-center gap-3">

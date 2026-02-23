@@ -23,7 +23,7 @@ export function DeceptionConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Deception Engine</h1>
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Deception Engine</h1>
           <p className="text-neutral-400 text-sm mt-1 ml-2">Live honeypot activity and intruder analysis.</p>
         </div>
         <div className="flex gap-2">

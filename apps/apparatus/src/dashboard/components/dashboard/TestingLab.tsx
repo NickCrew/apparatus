@@ -49,7 +49,7 @@ export function TestingLab() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-100 font-mono flex items-center gap-2 ml-2">
+        <h1 className="text-2xl text-neutral-100 type-heading flex items-center gap-2 ml-2">
           <FlaskConical className="h-6 w-6 text-primary-400" />
           Vulnerability Lab
         </h1>

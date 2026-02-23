@@ -21,8 +21,8 @@ export function MTDConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Moving Target Defense</h1>
-          <p className="text-neutral-400 text-sm mt-1 ml-2">Polymorphic route shifting to hide internal APIs.</p>
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Moving Target Defense</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2 type-body">Polymorphic route shifting to hide internal APIs.</p>
         </div>
         <Badge variant={isActive ? 'success' : 'neutral'} dot>
             {isActive ? 'ACTIVE_DEFENSE' : 'MTD_DISABLED'}
@@ -49,8 +49,8 @@ export function MTDConsole() {
                             <div className="w-16 h-16 bg-primary-500/10 rounded-full flex items-center justify-center mb-4 border border-primary-500/30">
                                 <Lock className="h-8 w-8 text-primary-400 animate-pulse" />
                             </div>
-                            <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-2">Current Active Prefix</span>
-                            <div className="text-4xl font-mono text-white font-bold tracking-tighter bg-neutral-900 px-6 py-2 rounded border border-neutral-800 select-all">
+                            <span className="text-xs type-tag text-neutral-500 uppercase tracking-widest mb-2">Current Active Prefix</span>
+                            <div className="text-4xl type-metric text-white tracking-tighter bg-neutral-900 px-6 py-2 rounded border border-neutral-800 select-all">
                                 /{currentPrefix}
                             </div>
                             <p className="mt-4 text-xs text-neutral-400 max-w-sm">
@@ -62,7 +62,7 @@ export function MTDConsole() {
                             <div className="w-16 h-16 bg-neutral-800/50 rounded-full flex items-center justify-center mb-4">
                                 <EyeOff className="h-8 w-8 text-neutral-600" />
                             </div>
-                            <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-2">MTD is currently inactive</span>
+                            <span className="text-xs type-tag text-neutral-500 uppercase tracking-widest mb-2">MTD is currently inactive</span>
                             <p className="text-sm text-neutral-400 max-w-xs">
                                 Activate polymorphism to scramble your API surface area.
                             </p>

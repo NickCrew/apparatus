@@ -66,7 +66,7 @@ export function GhostConsole() {
         <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-140px)] flex flex-col">
             <div className="flex items-end justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Ghost API Mocker</h1>
+                    <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Ghost API Mocker</h1>
                     <p className="text-neutral-400 text-sm mt-1 ml-2">
                         Virtualize dependency APIs with configurable latency and error behavior.
                     </p>

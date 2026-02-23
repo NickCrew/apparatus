@@ -62,17 +62,17 @@ export function ClusterConsole() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100 font-mono ml-2">Cluster Operations</h1>
-          <p className="text-neutral-400 text-sm mt-1 ml-2">Distributed command & control network.</p>
+          <h1 className="text-2xl text-neutral-100 ml-2 type-heading">Cluster Operations</h1>
+          <p className="text-neutral-400 text-sm mt-1 ml-2 type-body">Distributed command & control network.</p>
         </div>
         <div className="flex items-center gap-3">
             <div className="flex flex-col items-end">
-                <span className="text-[10px] font-mono text-neutral-500 uppercase">Active Nodes</span>
-                <span className="text-xl font-mono text-primary-400 font-bold">{nodes.length} NODES</span>
+                <span className="text-[10px] type-tag text-neutral-500 uppercase">Active Nodes</span>
+                <span className="text-xl type-metric text-primary-400">{nodes.length} NODES</span>
             </div>
             <div className="h-8 w-px bg-neutral-800" />
             <div className="flex flex-col items-end">
-                <span className="text-[10px] font-mono text-neutral-500 uppercase">Status</span>
+                <span className="text-[10px] type-tag text-neutral-500 uppercase">Status</span>
                 <Badge variant={isAttacking ? 'warning' : 'success'} dot>
                     {isAttacking ? 'RUNNING' : 'IDLE'}
                 </Badge>
