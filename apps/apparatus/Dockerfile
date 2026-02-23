@@ -21,6 +21,7 @@ COPY libs/client libs/client
 RUN pnpm nx run client:build \
   && pnpm nx run apparatus:build \
   && pnpm --filter @apparatus/server deploy --prod /app \
+  && cp -r apps/apparatus/dist /app/ \
   && test -d /app/dist \
   && test -f /app/dist/index.js \
   && test -d /app/dist/dist-dashboard \
