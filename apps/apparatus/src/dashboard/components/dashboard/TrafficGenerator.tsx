@@ -10,12 +10,13 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Slider } from '../ui/slider';
-import { Zap, AlertTriangle, Clock, FlaskConical, Play, Square, Settings2, Target, Waves } from 'lucide-react';
+import { Zap, AlertTriangle, Clock, FlaskConical, Play, Square, Settings2, Target, Waves, ShieldAlert } from 'lucide-react';
 import { useApparatus } from '../../providers/ApparatusProvider';
 import { cn } from '../ui/cn';
 
 interface DemoConfig {
   enabled: boolean;
+  attack_sim: boolean;
   intensity: number;
   errorRate: number;
   latencyBase: number;
@@ -81,6 +82,31 @@ export function TrafficGenerator() {
     }
   };
 
+  const toggleAttackSim = async () => {
+    // Confirmation before starting destructive actions
+    if (!config?.attack_sim && !confirm("⚠️ DANGER: Attack Simulation\n\nThis will fire REAL attack payloads (SQLi, XSS, etc.) at the target. Ensure you have authorization.\n\nProceed?")) {
+        return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const res = await fetch(`${baseUrl}/_sensor/demo/attack-sim/toggle`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMs: 2000 })
+      });
+      
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      
+      const data = await res.json();
+      setConfig(prev => prev ? { ...prev, attack_sim: data.attack_sim } : null);
+    } catch (err) {
+      console.error('Failed to toggle attack sim:', err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (!config) return null;
 
   return (
@@ -130,6 +156,28 @@ export function TrafficGenerator() {
               </Button>
             ))}
           </div>
+        </div>
+
+        {/* Attack Simulation Mode */}
+        <div className="space-y-3 p-3 bg-danger-950/10 border border-danger-900/20 rounded-sm">
+          <div className="flex justify-between items-center">
+            <label className="text-[10px] font-mono text-danger-500 uppercase tracking-widest flex items-center gap-2 font-bold">
+              <ShieldAlert className={cn("h-3.5 w-3.5", config.attack_sim && "animate-pulse")} />
+              Attack Simulation
+            </label>
+            <Button 
+              size="sm" 
+              variant={config.attack_sim ? 'danger' : 'outline'}
+              className="h-6 px-3 text-[9px] font-bold"
+              onClick={toggleAttackSim}
+              disabled={isUpdating}
+            >
+              {config.attack_sim ? 'ACTIVE' : 'INITIALIZE'}
+            </Button>
+          </div>
+          <p className="text-[10px] text-neutral-500 font-mono leading-tight">
+            Fires real payloads (SQLi, XSS, CmdI) from random IPs to test WAF/Sentinel efficacy.
+          </p>
         </div>
 
         {/* Pattern Selection */}
