@@ -4,6 +4,24 @@
 
 @layer base {
   :root {
+    --font-recursive: "Recursive", ui-monospace, monospace;
+
+    --type-display-axes: 'wght' 300, 'MONO' 0, 'CASL' 0, 'CRSV' 0.5, 'slnt' 0;
+    --type-heading-axes: 'wght' 500, 'MONO' 0, 'CASL' 0.2, 'CRSV' 0.5, 'slnt' 0;
+    --type-subhead-axes: 'wght' 600, 'MONO' 0, 'CASL' 0.3, 'CRSV' 0.5, 'slnt' -3;
+    --type-body-axes: 'wght' 400, 'MONO' 0, 'CASL' 0.6, 'CRSV' 0.5, 'slnt' 0;
+    --type-label-axes: 'wght' 600, 'MONO' 1, 'CASL' 0.3, 'CRSV' 0.5, 'slnt' -4;
+    --type-tag-axes: 'wght' 800, 'MONO' 0, 'CASL' 0, 'CRSV' 0.5, 'slnt' -3;
+    --type-metric-axes: 'wght' 400, 'MONO' 1, 'CASL' 0.6, 'CRSV' 0.5, 'slnt' 0;
+    --type-metric-unit-axes: 'wght' 500, 'MONO' 1, 'CASL' 0, 'CRSV' 0.5, 'slnt' 0;
+    --type-data-axes: 'wght' 500, 'MONO' 1, 'CASL' 0, 'CRSV' 0.5, 'slnt' 0;
+    --type-code-axes: 'wght' 400, 'MONO' 1, 'CASL' 0, 'CRSV' 0.5, 'slnt' 0;
+    --type-timestamp-axes: 'wght' 500, 'MONO' 1, 'CASL' 0, 'CRSV' 0.5, 'slnt' 0;
+    --type-nav-axes: 'wght' 500, 'MONO' 0.5, 'CASL' 0.2, 'CRSV' 0.5, 'slnt' -2;
+    --type-nav-active-axes: 'wght' 700, 'MONO' 0.5, 'CASL' 0.1, 'CRSV' 0.5, 'slnt' -2;
+    --type-link-axes: 'wght' 700, 'MONO' 0, 'CASL' 0, 'CRSV' 0.5, 'slnt' -15;
+    --type-breadcrumb-axes: 'wght' 700, 'MONO' 1, 'CASL' 0.2, 'CRSV' 0.5, 'slnt' -7;
+
     --background: 0 0% 2%; /* #050505 */
     --foreground: 0 0% 100%;
 
@@ -78,21 +96,25 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
-    font-variation-settings: 'MONO' 0, 'CASL' 0, 'slnt' 0, 'CRSV' 0.5;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-body-axes);
   }
 
-  /* Default Recursive settings for families */
+  /* Default Recursive settings for compatibility */
   .font-mono {
+    font-family: var(--font-recursive);
     font-variation-settings: 'MONO' 1, 'CASL' 0, 'slnt' 0, 'CRSV' 0.5;
   }
 
   .font-display {
-    font-variation-settings: 'MONO' 0, 'CASL' 1, 'slnt' 0, 'CRSV' 1;
+    font-family: var(--font-recursive);
+    font-variation-settings: 'MONO' 0, 'CASL' 0.2, 'slnt' 0, 'CRSV' 0.5;
   }
 
   .font-sans {
-    font-variation-settings: 'MONO' 0, 'CASL' 0, 'slnt' 0, 'CRSV' 0.5;
+    font-family: var(--font-recursive);
+    font-variation-settings: 'MONO' 0, 'CASL' 0.6, 'slnt' 0, 'CRSV' 0.5;
   }
 
   .crt-shell {
@@ -187,11 +209,103 @@
   }
 
   /* Recursive fine-grained control */
-  .rec-mono { font-variation-settings: 'MONO' 1, 'CASL' 0; }
-  .rec-casual { font-variation-settings: 'MONO' 0, 'CASL' 1; }
-  .rec-tech { font-variation-settings: 'MONO' 0.5, 'CASL' 0.5; }
-  .rec-linear { font-variation-settings: 'MONO' 0, 'CASL' 0; }
-  .rec-slant { font-variation-settings: 'slnt' -15; }
+  .rec-mono { font-family: var(--font-recursive); font-variation-settings: 'MONO' 1, 'CASL' 0, 'CRSV' 0.5, 'slnt' 0; }
+  .rec-casual { font-family: var(--font-recursive); font-variation-settings: 'MONO' 0, 'CASL' 0.6, 'CRSV' 0.5, 'slnt' 0; }
+  .rec-tech { font-family: var(--font-recursive); font-variation-settings: 'MONO' 0.5, 'CASL' 0.2, 'CRSV' 0.5, 'slnt' -2; }
+  .rec-linear { font-family: var(--font-recursive); font-variation-settings: 'MONO' 0, 'CASL' 0, 'CRSV' 0.5, 'slnt' 0; }
+  .rec-slant { font-family: var(--font-recursive); font-variation-settings: 'slnt' -15, 'CRSV' 0.5; }
+
+  .type-display {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-display-axes);
+    line-height: 1.1;
+  }
+
+  .type-heading {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-heading-axes);
+    line-height: 1.2;
+  }
+
+  .type-subhead {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-subhead-axes);
+    line-height: 1.4;
+    letter-spacing: 1.5px;
+  }
+
+  .type-body {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-body-axes);
+    line-height: 1.55;
+  }
+
+  .type-label {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-label-axes);
+    letter-spacing: 1px;
+  }
+
+  .type-tag {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-tag-axes);
+    letter-spacing: 1.5px;
+  }
+
+  .type-metric {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-metric-axes);
+    line-height: 1;
+    letter-spacing: -0.5px;
+  }
+
+  .type-metric-unit {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-metric-unit-axes);
+    letter-spacing: 0.5px;
+  }
+
+  .type-data {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-data-axes);
+  }
+
+  .type-code {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-code-axes);
+    letter-spacing: 0.5px;
+  }
+
+  .type-timestamp {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-timestamp-axes);
+    letter-spacing: 0.5px;
+  }
+
+  .type-nav {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-nav-axes);
+    letter-spacing: 1px;
+  }
+
+  .type-nav-active {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-nav-active-axes);
+    letter-spacing: 1px;
+  }
+
+  .type-link {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-link-axes);
+    letter-spacing: 1px;
+  }
+
+  .type-breadcrumb {
+    font-family: var(--font-recursive);
+    font-variation-settings: var(--type-breadcrumb-axes);
+    letter-spacing: 2.5px;
+  }
+
   .terminal-flicker {
     animation: terminal-text-flicker 3.8s steps(1, end) 5;
   }

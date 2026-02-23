@@ -1,5 +1,6 @@
 import { cn } from './cn';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { typographyRole } from './typography';
 
 type AccentColor = 'primary' | 'success' | 'warning' | 'danger';
 
@@ -69,10 +70,10 @@ export function StatCard({
       <div className="p-4 pl-5">
         <div className="flex justify-between items-start">
           <div className="space-y-2">
-            <span className="text-label font-display text-neutral-600 block rec-casual">
+            <span className={cn("text-[12px] text-neutral-600 block", typographyRole("label"))}>
               {label}
             </span>
-            <div className="text-display-md font-display text-neutral-100">
+            <div className={cn("text-[32px] text-neutral-100", typographyRole("metric"))}>
               {value}
             </div>
           </div>
@@ -85,7 +86,8 @@ export function StatCard({
         <div className="mt-3 flex items-center justify-between">
           {trend ? (
             <div className={cn(
-              "flex items-center gap-1 text-[11px] font-mono",
+              "flex items-center gap-1 text-[11px]",
+              typographyRole("timestamp"),
               isPositive ? "text-success-500/80" : isNeutral ? "text-neutral-400" : "text-danger-400/80"
             )}>
               {isPositive ? (
@@ -98,7 +100,7 @@ export function StatCard({
               <span>{Math.abs(trend.value)}%</span>
             </div>
           ) : (
-            <div className="text-[10px] font-mono text-neutral-700">—</div>
+            <div className={cn("text-[10px] text-neutral-700", typographyRole("timestamp"))}>—</div>
           )}
 
           {chart && <div className="h-8 w-24">{chart}</div>}

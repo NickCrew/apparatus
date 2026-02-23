@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "./cn"
+import { typographyRole } from "./typography"
 
 const cardVariants = cva(
   "border overflow-hidden flex flex-col transition-all duration-500 ease-out",
@@ -68,7 +69,8 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight font-display text-ops-text-strong rec-tech",
+      "text-lg leading-none text-ops-text-strong",
+      typographyRole("heading"),
       className
     )}
     {...props}
@@ -82,7 +84,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-muted-foreground font-sans", className)}
+    className={cn("text-sm text-muted-foreground", typographyRole("body"), className)}
     {...props}
   />
 ))

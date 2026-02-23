@@ -2,9 +2,10 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "./cn"
+import { typographyRole } from "./typography"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-sm border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 font-mono tracking-wider",
+  "inline-flex items-center rounded-sm border px-2.5 py-0.5 text-[11px] transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 uppercase",
   {
     variants: {
       variant: {
@@ -23,7 +24,7 @@ const badgeVariants = cva(
         info: "border-transparent bg-blue-500/15 text-blue-500 hover:bg-blue-500/25 border-blue-500/20",
         neon: "border-primary/50 bg-primary/10 text-primary shadow-[0_0_10px_rgba(0,240,255,0.2)]",
         chip:
-          "border-ops-line bg-ops-panel-soft/85 text-ops-text-muted font-medium tracking-[0.12em] uppercase text-[10px] px-2 py-1",
+          "border-ops-line bg-ops-panel-soft/85 text-ops-text-muted px-2 py-1",
       },
       size: { // Added size variant to support legacy API
           default: "",
@@ -47,7 +48,7 @@ export interface BadgeProps
 
 function Badge({ className, variant, size, dot, children, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
+    <div className={cn(badgeVariants({ variant, size }), typographyRole("tag"), className)} {...props}>
       {dot && (
         <span className={cn("mr-1.5 flex h-1.5 w-1.5 rounded-full transition-casual", 
             (variant === 'destructive' || variant === 'danger') ? 'bg-danger animate-pulse' :

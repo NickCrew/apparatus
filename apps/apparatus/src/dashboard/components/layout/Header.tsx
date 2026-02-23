@@ -1,6 +1,7 @@
 import { useApparatus } from '../../providers/ApparatusProvider';
 import { HelpCircle, Terminal } from 'lucide-react';
 import { cn } from '../ui/cn';
+import { typographyRole } from '../ui/typography';
 
 export function Header() {
   const { health } = useApparatus();
@@ -15,7 +16,7 @@ export function Header() {
   return (
     <header className="h-12 bg-black/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-5 z-10 sticky top-0">
       {/* Left: Breadcrumb */}
-      <div className="hidden md:flex items-center gap-2 text-[11px] font-mono tracking-wider">
+      <div className={cn("hidden md:flex items-center gap-2 text-[10px]", typographyRole("breadcrumb"))}>
         <div className={cn(
             "w-2.5 h-2.5 rounded-[1px] transition-all duration-1000",
             isHealthy ? "bg-primary shadow-[0_0_12px_rgba(0,196,167,0.8)]" :
@@ -35,9 +36,10 @@ export function Header() {
         {/* Telemetry Status */}
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end">
-            <span className="text-[9px] font-mono text-neutral-600 uppercase leading-none">Status</span>
+            <span className={cn("text-[9px] text-neutral-600 uppercase leading-none", typographyRole("timestamp"))}>Status</span>
             <span className={cn(
-                "text-[10px] font-mono font-bold leading-none mt-1 uppercase",
+                "text-[10px] leading-none mt-1 uppercase",
+                typographyRole("tag"),
                 isHealthy ? "text-primary" : "text-danger"
             )}>
                 {health.status === 'healthy' ? 'NOMINAL' : health.status.toUpperCase()}
@@ -46,8 +48,8 @@ export function Header() {
           
           {health.latencyMs !== undefined && (
             <div className="flex flex-col items-end border-l border-white/5 pl-3">
-              <span className="text-[9px] font-mono text-neutral-600 uppercase leading-none">Latency</span>
-              <span className="text-[10px] font-mono text-neutral-400 leading-none mt-1 font-bold">
+              <span className={cn("text-[9px] text-neutral-600 uppercase leading-none", typographyRole("timestamp"))}>Latency</span>
+              <span className={cn("text-[10px] text-neutral-400 leading-none mt-1", typographyRole("tag"))}>
                 {health.latencyMs}ms
               </span>
             </div>
@@ -64,8 +66,8 @@ export function Header() {
           aria-label="Open command palette"
         >
           <Terminal className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline text-[10px] font-mono uppercase tracking-widest">Commands</span>
-          <kbd className="rounded-[2px] border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400">
+          <span className={cn("hidden lg:inline text-[10px] uppercase", typographyRole("tag"))}>Commands</span>
+          <kbd className={cn("rounded-[2px] border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[10px] text-neutral-400", typographyRole("timestamp"))}>
             ⌘K
           </kbd>
         </button>
@@ -78,8 +80,8 @@ export function Header() {
           aria-label="Open help"
         >
           <HelpCircle className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline text-[10px] font-mono uppercase tracking-widest">Help</span>
-          <kbd className="rounded-[2px] border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400">
+          <span className={cn("hidden lg:inline text-[10px] uppercase", typographyRole("tag"))}>Help</span>
+          <kbd className={cn("rounded-[2px] border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[10px] text-neutral-400", typographyRole("timestamp"))}>
             ⌘?
           </kbd>
         </button>

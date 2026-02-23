@@ -7,3 +7,5 @@ export { Spinner } from './Spinner';
 export { StatusIndicator } from './StatusIndicator';
 export { Slider } from './slider';
 export { cn } from './cn';
+export { typographyRoles, typographyRole } from './typography';
+export type { TypographyRole } from './typography';
