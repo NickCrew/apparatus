@@ -28,6 +28,15 @@ interface HelpSearchModalProps {
   onSelectDoc?: (docId: string) => void;
 }
 
+function isHelpShortcut(event: KeyboardEvent): boolean {
+  if (!event.metaKey && !event.ctrlKey) {
+    return false;
+  }
+
+  const normalizedKey = event.key.toLowerCase();
+  return normalizedKey === '?' || normalizedKey === '/' || event.code === 'Slash';
+}
+
 export function HelpSearchModal({ open, onOpenChange, onSelectDoc }: HelpSearchModalProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DocResult[]>([]);
@@ -37,6 +46,24 @@ export function HelpSearchModal({ open, onOpenChange, onSelectDoc }: HelpSearchM
   const [categories, setCategories] = useState<string[]>([]);
   const { openDoc } = useDocViewer();
   const { trackSearch } = useSearchAnalytics();
+
+  useEffect(() => {
+    const openHelpModal = () => onOpenChange(true);
+    const handleHelpShortcut = (event: KeyboardEvent) => {
+      if (!isHelpShortcut(event)) {
+        return;
+      }
+      event.preventDefault();
+      onOpenChange(true);
+    };
+
+    document.addEventListener('keydown', handleHelpShortcut, true);
+    window.addEventListener('apparatus:open-help-modal', openHelpModal);
+    return () => {
+      document.removeEventListener('keydown', handleHelpShortcut, true);
+      window.removeEventListener('apparatus:open-help-modal', openHelpModal);
+    };
+  }, [onOpenChange]);
 
   // Reset state on close
   useEffect(() => {

@@ -1,9 +1,16 @@
 import { useApparatus } from '../../providers/ApparatusProvider';
+import { HelpCircle, Terminal } from 'lucide-react';
 import { cn } from '../ui/cn';
 
 export function Header() {
   const { health } = useApparatus();
   const isHealthy = health.status === 'healthy';
+  const handleOpenCommandPalette = () => {
+    window.dispatchEvent(new CustomEvent('apparatus:open-command-palette'));
+  };
+  const handleOpenHelp = () => {
+    window.dispatchEvent(new CustomEvent('apparatus:open-help-modal'));
+  };
 
   return (
     <header className="h-12 bg-black/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-5 z-10 sticky top-0">
@@ -46,6 +53,36 @@ export function Header() {
             </div>
           )}
         </div>
+
+        <div className="h-5 w-px bg-white/5 mx-1" />
+
+        <button
+          type="button"
+          onClick={handleOpenCommandPalette}
+          className="inline-flex items-center gap-2 rounded-sm border border-neutral-800/80 bg-neutral-900/60 px-2.5 py-1.5 text-neutral-300 transition-colors hover:border-primary/40 hover:text-primary"
+          title="Open command palette (Cmd+K)"
+          aria-label="Open command palette"
+        >
+          <Terminal className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline text-[10px] font-mono uppercase tracking-widest">Commands</span>
+          <kbd className="rounded-[2px] border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400">
+            ⌘K
+          </kbd>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleOpenHelp}
+          className="inline-flex items-center gap-2 rounded-sm border border-neutral-800/80 bg-neutral-900/60 px-2.5 py-1.5 text-neutral-300 transition-colors hover:border-primary/40 hover:text-primary"
+          title="Open help (Cmd+?)"
+          aria-label="Open help"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline text-[10px] font-mono uppercase tracking-widest">Help</span>
+          <kbd className="rounded-[2px] border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400">
+            ⌘?
+          </kbd>
+        </button>
 
       </div>
     </header>
