@@ -1,4 +1,4 @@
-name: Publish NPM Packages
+name: Publish GitHub Packages
 
 on:
   release:
@@ -17,7 +17,7 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
+  packages: write
 
 jobs:
   publish:
@@ -46,14 +46,24 @@ jobs:
       - name: Build publishable packages
         run: pnpm nx run-many -t build --projects=client,cli
 
-      - name: Verify npm authentication
+      - name: Configure GitHub Packages registry
+        run: |
+          cat > ~/.npmrc <<'EOF'
+          @apparatus:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          always-auth=true
+          EOF
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm whoami
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || github.token }}
+
+      - name: Verify GitHub Packages authentication
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || github.token }}
+        run: npm whoami --registry=https://npm.pkg.github.com
 
       - name: Publish packages
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || github.token }}
         run: |
           set -euo pipefail
 
@@ -80,7 +90,7 @@ jobs:
               return 0
             fi
 
-            if npm view "${name}@${version}" version >/dev/null 2>&1; then
+            if npm view "${name}@${version}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
               echo "Skipping ${name}@${version}; already published."
               return 0
             fi
@@ -88,7 +98,7 @@ jobs:
             echo "Publishing ${name}@${version} with dist-tag ${DIST_TAG}"
             (
               cd "$dir"
-              pnpm publish --access public --tag "$DIST_TAG" --no-git-checks --provenance
+              pnpm publish --tag "$DIST_TAG" --registry https://npm.pkg.github.com --no-git-checks
             )
           }
 
