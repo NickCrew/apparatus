@@ -1,4 +1,6 @@
 import { ToolAction } from "../tool-executor.js";
+import { DEFAULT_AUTOPILOT_PERSONA_ID } from "./personas.js";
+import type { AutopilotPersonaId } from "./personas.js";
 
 export type AutopilotSessionState = "idle" | "running" | "stopping" | "stopped" | "completed" | "failed";
 export type SessionAssetType = "endpoint" | "credential" | "token" | "service" | "host" | "vuln" | "path" | "indicator";
@@ -172,6 +174,7 @@ export interface RedTeamSession {
     endedAt?: string;
     iteration: number;
     maxIterations: number;
+    persona: AutopilotPersonaId;
     allowedTools: ToolAction[];
     thoughts: ThoughtEntry[];
     actions: ActionEntry[];
@@ -270,6 +273,7 @@ export function createSession(data: {
     targetBaseUrl: string;
     maxIterations: number;
     allowedTools: ToolAction[];
+    persona?: AutopilotPersonaId;
 }) {
     evictOldestSessionIfNeeded();
     const id = `rt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -281,6 +285,7 @@ export function createSession(data: {
         createdAt: new Date().toISOString(),
         iteration: 0,
         maxIterations: data.maxIterations,
+        persona: data.persona || DEFAULT_AUTOPILOT_PERSONA_ID,
         allowedTools: data.allowedTools,
         thoughts: [],
         actions: [],

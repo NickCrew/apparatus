@@ -50,6 +50,7 @@ describe('RedTeam Planner Payload', () => {
         objective: session.objective,
         intervalMs: 0,
         maxIterations: 3,
+        persona: 'researcher',
         allowedTools: ['delay'],
       },
       snapshot: makeSnapshot(),
@@ -64,6 +65,8 @@ describe('RedTeam Planner Payload', () => {
     expect(payload.memory?.recentAssets).toHaveLength(0);
     expect(payload.memory?.recentObservations).toHaveLength(0);
     expect(payload.memory?.recentRelations).toHaveLength(0);
+    expect(payload.persona.id).toBe('researcher');
+    expect(payload.persona.tags).toContain('METHODICAL');
     expect(payload.recentDefenseFeedback).toBeNull();
     expect(shouldPauseForBreakSignalsForTests(memory)).toBe(false);
   });
@@ -118,6 +121,7 @@ describe('RedTeam Planner Payload', () => {
         objective: session.objective,
         intervalMs: 0,
         maxIterations: 3,
+        persona: 'apt',
         allowedTools: ['cluster.attack', 'delay'],
       },
       snapshot: makeSnapshot(),
@@ -141,6 +145,8 @@ describe('RedTeam Planner Payload', () => {
     expect(payload.memory?.totals.observations).toBeGreaterThanOrEqual(1);
     expect(payload.memory?.recentObservations[0]?.summary.length).toBeLessThanOrEqual(160);
     expect(payload.memory?.objectiveProgress.breakSignals).toContain('new-5xx-errors:3');
+    expect(payload.persona.id).toBe('apt');
+    expect(payload.persona.tags).toContain('HIGH_STEALTH');
     expect(payload.recentDefenseFeedback?.signal).toBe('rate_limited');
     expect(payload.recentDefenseFeedback?.statusCode).toBe(429);
     expect(shouldPauseForBreakSignalsForTests(memory)).toBe(true);

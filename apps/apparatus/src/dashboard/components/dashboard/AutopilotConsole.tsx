@@ -26,6 +26,27 @@ const TOOL_OPTIONS = [
   { id: 'chaos.crash', label: 'Crash Process' },
 ] as const;
 
+const FALLBACK_PERSONA_OPTIONS = [
+  {
+    id: 'script_kiddie',
+    label: 'Script Kiddie',
+    description: 'Noisy and fast with low stealth discipline.',
+    tags: ['LOW_STEALTH', 'HIGH_NOISE', 'FAST_LOOP'],
+  },
+  {
+    id: 'researcher',
+    label: 'Researcher',
+    description: 'Methodical and evidence-first with lower impact pacing.',
+    tags: ['METHODICAL', 'LOW_IMPACT', 'EVIDENCE_FIRST'],
+  },
+  {
+    id: 'apt',
+    label: 'APT',
+    description: 'Stealth-oriented and adaptive with evasive posture.',
+    tags: ['HIGH_STEALTH', 'ADAPTIVE', 'PERSISTENT'],
+  },
+] as const;
+
 const PHASE_LABELS: Record<string, string> = {
   analyze: 'ANALYZE',
   decide: 'DECIDE',
@@ -36,10 +57,11 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 export function AutopilotConsole() {
-  const { session, latestReport, active, isLoading, error, start, stop, kill } = useAutopilot();
+  const { session, latestReport, active, isLoading, error, config, start, stop, kill } = useAutopilot();
   const [objective, setObjective] = useState('Find the breaking point of the /checkout API');
   const [maxIterations, setMaxIterations] = useState(12);
   const [intervalMs, setIntervalMs] = useState(1500);
+  const [selectedPersona, setSelectedPersona] = useState('script_kiddie');
   const [forbidCrash, setForbidCrash] = useState(true);
   const [allowedTools, setAllowedTools] = useState<string[]>([
     'cluster.attack',
@@ -55,6 +77,20 @@ export function AutopilotConsole() {
   const effectiveAllowedTools = useMemo(
     () => (forbidCrash ? allowedTools.filter((tool) => tool !== 'chaos.crash') : allowedTools),
     [allowedTools, forbidCrash]
+  );
+  const personaOptions = useMemo(
+    () => (config?.personas?.length ? config.personas : [...FALLBACK_PERSONA_OPTIONS]),
+    [config?.personas]
+  );
+  const isPersonaSupported = useMemo(
+    () => personaOptions.some((persona) => persona.id === selectedPersona),
+    [personaOptions, selectedPersona]
+  );
+  const selectedPersonaModel = useMemo(
+    () => (isPersonaSupported
+      ? personaOptions.find((persona) => persona.id === selectedPersona)
+      : personaOptions[0]),
+    [isPersonaSupported, personaOptions, selectedPersona]
   );
 
   const thoughts = session?.thoughts || [];
@@ -90,6 +126,13 @@ export function AutopilotConsole() {
     scroller.scrollTop = scroller.scrollHeight;
   }, [actionAutoScroll, actions.length]);
 
+  useEffect(() => {
+    const fallbackPersona = config?.defaultPersona || personaOptions[0]?.id || 'script_kiddie';
+    if (!isPersonaSupported) {
+      setSelectedPersona(fallbackPersona);
+    }
+  }, [config?.defaultPersona, isPersonaSupported, personaOptions]);
+
   const headerSummary = useMemo(() => {
     const status = session?.state || 'idle';
     const step = session ? `${session.iteration}/${session.maxIterations}` : '0/0';
@@ -105,6 +148,7 @@ export function AutopilotConsole() {
       objective,
       maxIterations,
       intervalMs,
+      persona: selectedPersona,
       scope: {
         allowedTools: effectiveAllowedTools,
         forbidCrash,
@@ -181,6 +225,22 @@ export function AutopilotConsole() {
               />
             </div>
 
+            <div>
+              <label htmlFor="autopilot-persona" className="block text-[11px] font-mono text-neutral-500 mb-1">Persona</label>
+              <select
+                id="autopilot-persona"
+                value={selectedPersona}
+                onChange={(event) => setSelectedPersona(event.target.value)}
+                className="w-full h-10 bg-neutral-900/60 border border-neutral-800/70 rounded-[3px] px-3 text-sm text-neutral-100 focus:outline-none focus:border-primary-500/40"
+              >
+                {personaOptions.map((persona) => (
+                  <option key={persona.id} value={persona.id}>
+                    {persona.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex items-end">
               <label className="flex items-center gap-2 h-10 px-3 border border-neutral-800/70 rounded-[3px] bg-neutral-900/60 w-full text-xs font-mono text-neutral-300">
                 <input
@@ -190,6 +250,21 @@ export function AutopilotConsole() {
                 />
                 Forbid Crash Tool
               </label>
+            </div>
+          </div>
+
+          <div className="rounded-[3px] border border-neutral-800/70 bg-neutral-900/45 p-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-mono text-neutral-500">Persona Profile</span>
+              <span className="text-xs font-mono text-neutral-100">{selectedPersonaModel?.label || 'Unknown'}</span>
+              {selectedPersonaModel?.tags?.map((tag) => (
+                <Badge key={tag} size="sm" variant="warning">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+            <div className="mt-1 text-[11px] text-neutral-400 font-mono">
+              {selectedPersonaModel?.description || 'No persona metadata available.'}
             </div>
           </div>
 

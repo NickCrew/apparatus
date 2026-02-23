@@ -108,6 +108,7 @@ export interface SessionContext {
 export interface AutopilotSession {
   id: string;
   objective: string;
+  persona?: string;
   state: AutopilotState;
   iteration: number;
   maxIterations: number;
@@ -130,8 +131,26 @@ interface StartPayload {
   objective: string;
   maxIterations?: number;
   intervalMs?: number;
+  persona?: string;
   scope: {
     allowedTools: string[];
+    forbidCrash: boolean;
+  };
+}
+
+export interface AutopilotPersonaOption {
+  id: string;
+  label: string;
+  description: string;
+  tags: string[];
+}
+
+export interface AutopilotConfig {
+  availableTools: string[];
+  defaultAllowedTools: string[];
+  personas: AutopilotPersonaOption[];
+  defaultPersona: string;
+  safetyDefaults: {
     forbidCrash: boolean;
   };
 }
@@ -143,6 +162,7 @@ export function useAutopilot() {
   const [active, setActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [config, setConfig] = useState<AutopilotConfig | null>(null);
   const sessionIdRef = useRef<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
@@ -164,6 +184,18 @@ export function useAutopilot() {
       if (data.session?.id) {
         sessionIdRef.current = data.session.id;
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, [baseUrl]);
+
+  const fetchConfig = useCallback(async () => {
+    if (!baseUrl) return;
+    try {
+      const res = await fetch(`${baseUrl}/api/redteam/autopilot/config`);
+      if (!res.ok) throw new Error(`Config failed (${res.status})`);
+      const data = (await res.json()) as AutopilotConfig;
+      setConfig(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -246,6 +278,7 @@ export function useAutopilot() {
 
   useEffect(() => {
     void fetchStatus();
+    void fetchConfig();
     if (!baseUrl) return;
 
     const interval = setInterval(() => {
@@ -253,7 +286,7 @@ export function useAutopilot() {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [baseUrl, fetchStatus]);
+  }, [baseUrl, fetchConfig, fetchStatus]);
 
   return {
     session,
@@ -261,7 +294,9 @@ export function useAutopilot() {
     active,
     isLoading,
     error,
+    config,
     fetchStatus,
+    fetchConfig,
     start,
     stop,
     kill,

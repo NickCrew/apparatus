@@ -67,6 +67,7 @@ describe('AI Autopilot', () => {
 
     expect(startRes.status).toBe(200);
     expect(startRes.body.success).toBe(true);
+    expect(startRes.body.session.persona).toBe('script_kiddie');
     expect(startRes.body.session.allowedTools).toContain('delay');
     expect(startRes.body.session.allowedTools).not.toContain('chaos.crash');
 
@@ -88,6 +89,48 @@ describe('AI Autopilot', () => {
     expect(
       finalStatus.session.thoughts.some((entry: { phase: string }) => entry.phase === 'analyze')
     ).toBe(true);
+  });
+
+  it('should expose supported personas via config and honor selected persona in start payload', async () => {
+    const configRes = await request(app).get('/api/redteam/autopilot/config');
+    expect(configRes.status).toBe(200);
+    expect(configRes.body.defaultPersona).toBe('script_kiddie');
+    expect(Array.isArray(configRes.body.personas)).toBe(true);
+    expect(configRes.body.personas.some((persona: { id: string }) => persona.id === 'apt')).toBe(true);
+
+    const startRes = await request(baseUrl)
+      .post('/api/redteam/autopilot/start')
+      .send({
+        objective: 'Stealth profile mission',
+        maxIterations: 1,
+        intervalMs: 0,
+        persona: 'apt',
+        scope: {
+          allowedTools: ['delay'],
+          forbidCrash: true,
+        },
+      });
+
+    expect(startRes.status).toBe(200);
+    expect(startRes.body.session.persona).toBe('apt');
+  });
+
+  it('should fall back to default persona when invalid persona is provided', async () => {
+    const startRes = await request(baseUrl)
+      .post('/api/redteam/autopilot/start')
+      .send({
+        objective: 'Invalid persona fallback mission',
+        maxIterations: 1,
+        intervalMs: 0,
+        persona: 'unknown_actor',
+        scope: {
+          allowedTools: ['delay'],
+          forbidCrash: true,
+        },
+      });
+
+    expect(startRes.status).toBe(200);
+    expect(startRes.body.session.persona).toBe('script_kiddie');
   });
 
   it('should hard-stop via kill switch', async () => {

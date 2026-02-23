@@ -13,6 +13,23 @@ let mockLatestReport: any = null;
 let mockActive = false;
 let mockIsLoading = false;
 let mockError: string | null = null;
+let mockConfig: any = {
+  personas: [
+    {
+      id: 'script_kiddie',
+      label: 'Script Kiddie',
+      description: 'Noisy and fast with low stealth discipline.',
+      tags: ['LOW_STEALTH', 'HIGH_NOISE', 'FAST_LOOP'],
+    },
+    {
+      id: 'apt',
+      label: 'APT',
+      description: 'Stealth-oriented and adaptive with evasive posture.',
+      tags: ['HIGH_STEALTH', 'ADAPTIVE', 'PERSISTENT'],
+    },
+  ],
+  defaultPersona: 'script_kiddie',
+};
 
 vi.mock('../../hooks/useAutopilot', () => ({
   useAutopilot: () => ({
@@ -21,6 +38,7 @@ vi.mock('../../hooks/useAutopilot', () => ({
     active: mockActive,
     isLoading: mockIsLoading,
     error: mockError,
+    config: mockConfig,
     fetchStatus: mockFetchStatus,
     start: mockStart,
     stop: mockStop,
@@ -35,6 +53,23 @@ describe('AutopilotConsole component', () => {
     mockActive = false;
     mockIsLoading = false;
     mockError = null;
+    mockConfig = {
+      personas: [
+        {
+          id: 'script_kiddie',
+          label: 'Script Kiddie',
+          description: 'Noisy and fast with low stealth discipline.',
+          tags: ['LOW_STEALTH', 'HIGH_NOISE', 'FAST_LOOP'],
+        },
+        {
+          id: 'apt',
+          label: 'APT',
+          description: 'Stealth-oriented and adaptive with evasive posture.',
+          tags: ['HIGH_STEALTH', 'ADAPTIVE', 'PERSISTENT'],
+        },
+      ],
+      defaultPersona: 'script_kiddie',
+    };
     mockStart.mockClear();
     mockStop.mockClear();
     mockKill.mockClear();
@@ -85,6 +120,7 @@ describe('AutopilotConsole component', () => {
     expect(payload).toBeTruthy();
     expect(payload.scope.forbidCrash).toBe(true);
     expect(payload.scope.allowedTools).not.toContain('chaos.crash');
+    expect(payload.persona).toBe('script_kiddie');
   });
 
   it('keeps kill switch enabled, disables engage when active, and wires soft stop state', () => {
@@ -126,5 +162,23 @@ describe('AutopilotConsole component', () => {
     expect(payload.objective).toBe('Find break on /ratelimit');
     expect(payload.maxIterations).toBe(30);
     expect(payload.intervalMs).toBe(0);
+    expect(payload.persona).toBe('script_kiddie');
+  });
+
+  it('allows selecting persona and sends selected persona in start payload', async () => {
+    render(<AutopilotConsole />);
+
+    const personaSelect = screen.getByLabelText(/persona/i);
+    const engageButton = screen.getByRole('button', { name: /engage autopilot/i });
+    fireEvent.change(personaSelect, { target: { value: 'apt' } });
+    fireEvent.click(engageButton);
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledTimes(1);
+    });
+
+    const payload = mockStart.mock.calls.at(-1)?.[0] as any;
+    expect(payload.persona).toBe('apt');
+    expect(screen.getByText('HIGH_STEALTH')).toBeTruthy();
   });
 });

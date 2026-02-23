@@ -22,6 +22,13 @@ import {
 } from "./report-store.js";
 import { executeToolStep, resetToolExecutorForTests, stopAllActiveExperiments, ToolAction, ToolExecutionResult } from "../tool-executor.js";
 import { logger } from "../logger.js";
+import {
+    DEFAULT_AUTOPILOT_PERSONA_ID,
+    getAutopilotPersonaId,
+    getAutopilotPersonaProfile,
+    listAutopilotPersonaProfiles,
+} from "./personas.js";
+import type { AutopilotPersonaId } from "./personas.js";
 
 const ALL_TOOLS: ToolAction[] = ["cluster.attack", "chaos.cpu", "chaos.memory", "mtd.rotate", "delay", "chaos.crash"];
 const DEFAULT_ALLOWED_TOOLS: ToolAction[] = ["cluster.attack", "chaos.cpu", "chaos.memory", "mtd.rotate", "delay"];
@@ -50,6 +57,7 @@ interface SessionControl {
     objective: string;
     intervalMs: number;
     maxIterations: number;
+    persona: AutopilotPersonaId;
     allowedTools: ToolAction[];
 }
 
@@ -444,10 +452,16 @@ function composePlannerPayload(
     memory: PlannerMemorySummary | null,
     recentDefenseFeedback: DefenseFeedback | null
 ) {
+    const persona = getAutopilotPersonaProfile(control.persona);
     return {
         objective: control.objective,
         iteration,
         telemetry: snapshot,
+        persona: {
+            id: persona.id,
+            label: persona.label,
+            tags: persona.tags,
+        },
         guardrails: {
             allowedTools: control.allowedTools,
             forbidCrashByDefault: !control.allowedTools.includes("chaos.crash"),
@@ -455,6 +469,83 @@ function composePlannerPayload(
         memory,
         recentDefenseFeedback,
     };
+}
+
+function stableHash(input: string) {
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i++) {
+        hash ^= input.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+}
+
+function deterministicRoll(sessionId: string, iteration: number, salt: string) {
+    const hash = stableHash(`${sessionId}:${iteration}:${salt}`);
+    return (hash % 10000) / 10000;
+}
+
+function pickPersonaWeightedTool(control: SessionControl, iteration: number): ToolAction | "none" {
+    if (control.allowedTools.length === 0) return "none";
+    const persona = getAutopilotPersonaProfile(control.persona);
+    const weighted = control.allowedTools.map((tool) => ({
+        tool,
+        weight: Math.max(0, Number(persona.toolWeights[tool] ?? 1)),
+    }));
+    const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+    if (totalWeight <= 0) {
+        return control.allowedTools[0] || "none";
+    }
+
+    const roll = deterministicRoll(control.sessionId, iteration, `persona-weight:${persona.id}`) * totalWeight;
+    let cursor = 0;
+    for (const item of weighted) {
+        cursor += item.weight;
+        if (roll <= cursor) {
+            return item.tool;
+        }
+    }
+
+    return weighted[weighted.length - 1]?.tool || "none";
+}
+
+function applyPersonaBias(decision: Decision, control: SessionControl, iteration: number): Decision {
+    if (decision.tool === "none") return decision;
+    const persona = getAutopilotPersonaProfile(control.persona);
+    const shouldBias = deterministicRoll(control.sessionId, iteration, `persona-bias:${persona.id}`) < persona.biasProbability;
+    if (!shouldBias) return decision;
+
+    const weightedTool = pickPersonaWeightedTool(control, iteration);
+    if (weightedTool === "none" || weightedTool === decision.tool) return decision;
+
+    const biased = sanitizeDecision({
+        thought: `${decision.thought} Persona bias(${persona.label}) pivoted tool choice toward ${weightedTool}.`,
+        reason: `${decision.reason} Persona bias weighting applied for ${persona.id}.`,
+        tool: weightedTool,
+        params: decision.params,
+        rawModelOutput: decision.rawModelOutput,
+        maneuver: decision.maneuver,
+    }, control);
+
+    return {
+        ...biased,
+        rawModelOutput: decision.rawModelOutput,
+    };
+}
+
+function buildSystemPrompt(control: SessionControl) {
+    const persona = getAutopilotPersonaProfile(control.persona);
+    const personaDirectives = persona.promptDirectives.map((directive) => `Persona directive: ${directive}`);
+    return [
+        "You are an autonomous reliability red-team strategist.",
+        `Active persona: ${persona.label} (${persona.id}).`,
+        `Persona tags: ${persona.tags.join(", ") || "none"}.`,
+        ...personaDirectives,
+        "Choose one tool action based on telemetry and objective.",
+        "Output only strict JSON with keys: thought, reason, tool, params.",
+        `Allowed tools: ${control.allowedTools.join(", ")}`,
+        "tool must be one of allowed tools or 'none'.",
+    ].join(" ");
 }
 
 function shouldPauseForBreakSignals(memory: PlannerMemorySummary | null) {
@@ -941,7 +1032,7 @@ async function decideNextAction(
     memory: PlannerMemorySummary | null,
     recentDefenseFeedback: DefenseFeedback | null
 ): Promise<Decision> {
-    const fallback = fallbackDecision(snapshot, control, iteration);
+    const fallback = applyPersonaBias(fallbackDecision(snapshot, control, iteration), control, iteration);
 
     const policyDecision = selectPolicyDecision(control, recentDefenseFeedback, iteration);
     if (policyDecision) {
@@ -958,13 +1049,7 @@ async function decideNextAction(
         }, control);
     }
 
-    const systemPrompt = [
-        "You are an autonomous reliability red-team strategist.",
-        "Choose one tool action based on telemetry and objective.",
-        "Output only strict JSON with keys: thought, reason, tool, params.",
-        `Allowed tools: ${control.allowedTools.join(", ")}`,
-        "tool must be one of allowed tools or 'none'.",
-    ].join(" ");
+    const systemPrompt = buildSystemPrompt(control);
 
     const userPrompt = JSON.stringify(composePlannerPayload(control, snapshot, iteration, memory, recentDefenseFeedback));
 
@@ -990,7 +1075,7 @@ async function decideNextAction(
             rawModelOutput: response,
         };
 
-        return sanitizeDecision(candidate, control);
+        return applyPersonaBias(sanitizeDecision(candidate, control), control, iteration);
     } catch {
         return fallback;
     }
@@ -1150,6 +1235,10 @@ function parseAllowedTools(input: unknown, forbidCrash = true): ToolAction[] {
     return ["delay"];
 }
 
+function parsePersona(input: unknown): AutopilotPersonaId {
+    return getAutopilotPersonaId(input);
+}
+
 async function runMission(control: SessionControl) {
     setSessionState(control.sessionId, "running", {
         startedAt: new Date().toISOString(),
@@ -1158,6 +1247,7 @@ async function runMission(control: SessionControl) {
 
     addThought(control.sessionId, "system", `Objective locked: ${control.objective}`);
     addThought(control.sessionId, "system", `Tool scope: ${control.allowedTools.join(", ")}`);
+    addThought(control.sessionId, "system", `Persona: ${getAutopilotPersonaProfile(control.persona).label}`);
 
     let previousSnapshot: RuntimeSnapshot | undefined;
     let previousDefenseFeedback: DefenseFeedback | null = null;
@@ -1410,11 +1500,13 @@ export async function autopilotStartHandler(req: Request, res: Response) {
         const intervalMs = clampNumber(req.body?.intervalMs, 1500, 0, 30000);
         const forbidCrash = req.body?.scope?.forbidCrash !== false;
         const allowedTools = parseAllowedTools(req.body?.scope?.allowedTools, forbidCrash);
+        const persona = parsePersona(req.body?.persona);
 
         const session = createSession({
             objective,
             targetBaseUrl,
             maxIterations,
+            persona,
             allowedTools,
         });
 
@@ -1426,6 +1518,7 @@ export async function autopilotStartHandler(req: Request, res: Response) {
             objective,
             intervalMs,
             maxIterations,
+            persona,
             allowedTools,
         };
 
@@ -1496,9 +1589,17 @@ export function autopilotReportsHandler(req: Request, res: Response) {
 }
 
 export function autopilotConfigHandler(_req: Request, res: Response) {
+    const personas = listAutopilotPersonaProfiles().map((persona) => ({
+        id: persona.id,
+        label: persona.label,
+        description: persona.description,
+        tags: persona.tags,
+    }));
     res.json({
         availableTools: ALL_TOOLS,
         defaultAllowedTools: DEFAULT_ALLOWED_TOOLS,
+        personas,
+        defaultPersona: DEFAULT_AUTOPILOT_PERSONA_ID,
         safetyDefaults: {
             forbidCrash: true,
         }
@@ -1521,6 +1622,7 @@ export function sanitizeDecisionForTests(candidate: {
     allowedTools: ToolAction[];
     baseUrl: string;
     objective: string;
+    persona?: AutopilotPersonaId;
 }) {
     return sanitizeDecision({
         ...candidate,
@@ -1531,6 +1633,7 @@ export function sanitizeDecisionForTests(candidate: {
         killRequested: false,
         intervalMs: 0,
         maxIterations: 1,
+        persona: context.persona || DEFAULT_AUTOPILOT_PERSONA_ID,
         ...context,
     });
 }
@@ -1600,6 +1703,7 @@ export function composePlannerPayloadForTests(input: {
         objective: string;
         intervalMs: number;
         maxIterations: number;
+        persona?: AutopilotPersonaId;
         allowedTools: ToolAction[];
     };
     snapshot: RuntimeSnapshot;
@@ -1607,13 +1711,35 @@ export function composePlannerPayloadForTests(input: {
     memory: PlannerMemorySummary | null;
     recentDefenseFeedback?: DefenseFeedback | null;
 }) {
+    const control: SessionControl = {
+        ...input.control,
+        persona: input.control.persona || DEFAULT_AUTOPILOT_PERSONA_ID,
+    };
     return composePlannerPayload(
-        input.control,
+        control,
         input.snapshot,
         input.iteration,
         input.memory,
         input.recentDefenseFeedback || null
     );
+}
+
+export function buildSystemPromptForTests(input: {
+    allowedTools: ToolAction[];
+    persona?: AutopilotPersonaId;
+}) {
+    const control: SessionControl = {
+        sessionId: "test-session",
+        stopRequested: false,
+        killRequested: false,
+        baseUrl: "http://127.0.0.1:8090",
+        objective: "Find break on /checkout",
+        intervalMs: 1000,
+        maxIterations: 1,
+        persona: input.persona || DEFAULT_AUTOPILOT_PERSONA_ID,
+        allowedTools: input.allowedTools,
+    };
+    return buildSystemPrompt(control);
 }
 
 export function classifyDefenseSignalForTests(input: {
@@ -1632,6 +1758,7 @@ export function selectPolicyDecisionForTests(input: {
         baseUrl: string;
         objective: string;
         intervalMs?: number;
+        persona?: AutopilotPersonaId;
     };
 }) {
     const control: SessionControl = {
@@ -1642,9 +1769,34 @@ export function selectPolicyDecisionForTests(input: {
         objective: input.context.objective,
         intervalMs: typeof input.context.intervalMs === "number" ? input.context.intervalMs : 1000,
         maxIterations: 1,
+        persona: input.context.persona || DEFAULT_AUTOPILOT_PERSONA_ID,
         allowedTools: input.context.allowedTools,
     };
     return selectPolicyDecision(control, input.recentDefenseFeedback, input.iteration);
+}
+
+export function pickPersonaWeightedToolForTests(input: {
+    allowedTools: ToolAction[];
+    sessionId?: string;
+    iteration: number;
+    persona?: AutopilotPersonaId;
+}) {
+    const control: SessionControl = {
+        sessionId: input.sessionId || "test-session",
+        stopRequested: false,
+        killRequested: false,
+        baseUrl: "http://127.0.0.1:8090",
+        objective: "Find break on /checkout",
+        intervalMs: 1000,
+        maxIterations: 1,
+        persona: input.persona || DEFAULT_AUTOPILOT_PERSONA_ID,
+        allowedTools: input.allowedTools,
+    };
+    return pickPersonaWeightedTool(control, input.iteration);
+}
+
+export function parsePersonaForTests(input: unknown) {
+    return parsePersona(input);
 }
 
 export function shouldPauseForBreakSignalsForTests(memory: ReturnType<typeof buildPlannerMemorySummary>) {
