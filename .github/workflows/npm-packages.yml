@@ -63,9 +63,9 @@ jobs:
       - name: Pack npm artifacts
         run: |
           mkdir -p artifacts/npm
-          (cd apps/apparatus && npm pack --pack-destination ../../artifacts/npm)
-          (cd libs/client && npm pack --pack-destination ../../artifacts/npm)
-          (cd apps/cli && npm pack --pack-destination ../../artifacts/npm)
+          (cd apps/apparatus && pnpm pack --pack-destination ../../artifacts/npm)
+          (cd libs/client && pnpm pack --pack-destination ../../artifacts/npm)
+          (cd apps/cli && pnpm pack --pack-destination ../../artifacts/npm)
           ls -lah artifacts/npm
 
       - name: Upload package artifacts

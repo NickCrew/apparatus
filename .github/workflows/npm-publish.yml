@@ -1,0 +1,96 @@
+name: Publish NPM Packages
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      dist_tag:
+        description: NPM dist-tag to publish under (for example: latest, next)
+        required: false
+        default: latest
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build publishable packages
+        run: pnpm nx run-many -t build --projects=client,cli
+
+      - name: Verify npm authentication
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm whoami
+
+      - name: Publish packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          DIST_TAG="latest"
+          INPUT_DIST_TAG="${{ github.event.inputs.dist_tag || '' }}"
+          if [ -n "$INPUT_DIST_TAG" ]; then
+            DIST_TAG="$INPUT_DIST_TAG"
+          fi
+          if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.release.prerelease }}" = "true" ]; then
+            DIST_TAG="next"
+          fi
+
+          publish_package() {
+            local dir="$1"
+            local name
+            local version
+            local is_private
+            name="$(node -p "require('./${dir}/package.json').name")"
+            version="$(node -p "require('./${dir}/package.json').version")"
+            is_private="$(node -p "Boolean(require('./${dir}/package.json').private)")"
+
+            if [ "$is_private" = "true" ]; then
+              echo "::warning::Skipping private package ${name}"
+              return 0
+            fi
+
+            if npm view "${name}@${version}" version >/dev/null 2>&1; then
+              echo "Skipping ${name}@${version}; already published."
+              return 0
+            fi
+
+            echo "Publishing ${name}@${version} with dist-tag ${DIST_TAG}"
+            (
+              cd "$dir"
+              pnpm publish --access public --tag "$DIST_TAG" --no-git-checks --provenance
+            )
+          }
+
+          publish_package "libs/client"
+          publish_package "apps/cli"

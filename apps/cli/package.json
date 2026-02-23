@@ -2,12 +2,15 @@
   "name": "@apparatus/cli",
   "version": "0.1.0",
   "description": "CLI and REPL for Apparatus API",
-  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "apparatus": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -28,5 +31,9 @@
   },
   "engines": {
     "node": ">=22.0.0"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
   }
 }
