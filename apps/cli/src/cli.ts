@@ -77,7 +77,7 @@ Examples:
   $ apparatus repl                        # Start interactive mode
 
 Environment Variables:
-  APPARATUS_URL       Base URL (default: http://localhost:8080)
+  APPARATUS_URL       Base URL (default: http://localhost:8090)
   APPARATUS_TIMEOUT   Request timeout in ms (default: 30000)
   APPARATUS_DEBUG     Enable debug mode (true/false)
   NO_COLOR          Disable colored output`)

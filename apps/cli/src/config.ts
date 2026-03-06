@@ -23,7 +23,7 @@ const HISTORY_FILE = join(CONFIG_DIR, 'history');
  * Priority: env vars > config file > defaults
  */
 const DEFAULT_CONFIG: ApparatusConfig = {
-  baseUrl: process.env.APPARATUS_URL || process.env.APPARATUS_URL || 'http://localhost:8080',
+  baseUrl: process.env.APPARATUS_URL || 'http://localhost:8090',
   timeout: parseInt(process.env.APPARATUS_TIMEOUT || '30000', 10),
   debug: process.env.APPARATUS_DEBUG === 'true' || process.env.DEBUG === 'true',
   defaultFormat: (process.env.APPARATUS_FORMAT as 'json' | 'table' | 'raw') || 'table',

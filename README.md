@@ -169,6 +169,69 @@ docker run -p 8090:8090 -p 8443:8443 -p 50051:50051 apparatus:latest
 # Access dashboard at http://localhost:8090/dashboard
 ```
 
+### CLI
+
+The `apparatus` CLI provides command-line access to all server APIs plus an interactive REPL.
+
+**Install from the monorepo:**
+
+```bash
+pnpm build
+pnpm link --global --filter @apparatus/cli
+```
+
+**Or run directly without installing:**
+
+```bash
+# From the repo root
+pnpm --filter @apparatus/cli start -- health
+
+# Or via npx after building
+cd apps/cli && npx . health
+```
+
+**Connect to a running server:**
+
+```bash
+# Default: http://localhost:8090
+apparatus health
+
+# Override with flag or env var
+apparatus -u http://myserver:8090 health
+export APPARATUS_URL=http://myserver:8090
+```
+
+**Command categories:**
+
+| Category | Examples |
+|---|---|
+| `core` | `health`, `echo /api/users`, `config` |
+| `chaos` | `chaos cpu --duration 5000`, `chaos memory` |
+| `security` | `security redteam`, `security scan` |
+| `defense` | `defense shield`, `defense tarpit` |
+| `identity` | `identity forge`, `identity verify` |
+| `traffic` | `traffic history`, `traffic replay` |
+| `scenarios` | `scenarios list`, `scenarios run` |
+| `drills` | `drills start cpu`, `drills status` |
+| `autopilot` | `autopilot start`, `autopilot status` |
+| `webhooks` | `webhooks list`, `webhooks create` |
+| `network` | `network dns`, `network proxy` |
+| `labs` | `labs fuzzer`, `labs pcap` |
+| `graphql` | `graphql query` |
+| `simulator` | `simulator attack` |
+
+**Interactive REPL:**
+
+```bash
+apparatus repl
+# Supports tab completion, command history, and shortcuts
+# e.g. h → health, cpu → chaos cpu, dns → network dns
+```
+
+**Global options:** `-u <url>`, `-j/--json`, `-v/--verbose`, `--no-color`, `--config <file>`
+
+**Config file:** `~/.apparatus/config.json` — persists base URL, timeout, format preferences.
+
 ---
 
 ## Usage Examples
@@ -176,7 +239,14 @@ docker run -p 8090:8090 -p 8443:8443 -p 50051:50051 apparatus:latest
 ### 1. Test Your Web App with the Red Team AI
 
 ```bash
-# Start autopilot against your app
+# CLI
+apparatus autopilot start "Find auth bypass vulnerabilities" \
+  --max-iterations 20 --interval 2000 \
+  --tools chaos.cpu,cluster.attack,mtd.rotate
+apparatus autopilot status
+apparatus autopilot reports
+
+# curl
 curl -X POST http://localhost:8090/api/redteam/autopilot/start \
   -H "Content-Type: application/json" \
   -d '{
@@ -187,25 +257,30 @@ curl -X POST http://localhost:8090/api/redteam/autopilot/start \
       "allowedTools": ["chaos.cpu", "cluster.attack", "mtd.rotate"]
     }
   }'
-
-# Check status
 curl http://localhost:8090/api/redteam/autopilot/status
-
-# Get results
 curl http://localhost:8090/api/redteam/autopilot/reports
 ```
 
 ### 2. Validate Payload Detection
 
 ```bash
-# Test if your app blocks XSS/SQLi/command injection
+# CLI
+apparatus security redteam http://myapp --path /search --method GET
+
+# curl
 curl "http://localhost:8090/redteam/validate?target=http://myapp&path=/search&method=GET"
 ```
 
 ### 3. Run a Chaos Scenario
 
 ```bash
-# Create a multi-step attack scenario
+# CLI
+apparatus chaos cpu --duration 5000         # 5s CPU spike
+apparatus chaos memory --size 104857600     # 100MB allocation
+apparatus scenarios list                    # List saved scenarios
+apparatus scenarios run <scenario_id> --wait
+
+# curl
 curl -X POST http://localhost:8090/scenarios \
   -H "Content-Type: application/json" \
   -d '{
@@ -216,29 +291,24 @@ curl -X POST http://localhost:8090/scenarios \
       { "id": "3", "action": "cluster.attack", "params": { "target": "http://127.0.0.1:8090/echo", "rate": 100 } }
     ]
   }'
-
-# Get scenario ID from response, then run it
 curl -X POST http://localhost:8090/scenarios/{scenario_id}/run
-
-# Monitor execution
 curl http://localhost:8090/scenarios/{scenario_id}/status?executionId={execution_id}
 ```
 
 ### 4. Activate Defense Mechanisms
 
 ```bash
-# Add WAF rule to block admin panel access
+# CLI
+apparatus defense sentinel add block-admin "/admin" --action block
+apparatus defense tarpit list
+apparatus defense mtd enable
+apparatus defense mtd rotate
+apparatus defense blackhole add 10.0.0.50 --reason "port scan"
+
+# curl
 curl -X POST http://localhost:8090/sentinel/rules \
   -H "Content-Type: application/json" \
-  -d '{
-    "pattern": "/admin",
-    "action": "block"
-  }'
-
-# Enable tarpit for suspicious IPs
-# Automatically traps access to /.env, /.git, /wp-admin, /admin.php
-
-# Activate Moving Target Defense
+  -d '{"pattern": "/admin", "action": "block"}'
 curl -X POST http://localhost:8090/mtd -d '{"prefix": "xyz123"}'
 # Now all APIs require xyz123 prefix: /xyz123/echo, /xyz123/healthz, etc.
 ```
@@ -246,23 +316,24 @@ curl -X POST http://localhost:8090/mtd -d '{"prefix": "xyz123"}'
 ### 5. Monitor Real-Time Traffic
 
 ```bash
-# Open web dashboard
+# Web dashboard
 open http://localhost:8090/dashboard
 
-# Or use terminal UI
+# Terminal UI
 pnpm tui
 
-# Or connect SSE client for raw events
+# CLI
+apparatus traffic status
+
+# SSE stream
 curl http://localhost:8090/sse
 ```
 
 ### 6. Capture and Replay Traffic
 
 ```bash
-# Capture network traffic for 30 seconds
+# curl
 curl "http://localhost:8090/capture.pcap?duration=30&iface=eth0" -o traffic.pcap
-
-# Replay HAR (HTTP Archive) file
 curl -X POST http://localhost:8090/replay \
   -H "Content-Type: application/json" \
   -d @requests.har
