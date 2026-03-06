@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # Apparatus Testing Platform
   apparatus:
@@ -28,6 +26,7 @@ services:
 
   # Chimera: Vulnerable Web Application
   vuln-web:
+    profiles: [chimera]
     build:
       context: ../Chimera/apps/vuln-web
       dockerfile: Dockerfile
@@ -50,6 +49,7 @@ services:
 
   # Chimera: Vulnerable REST API
   vuln-api:
+    profiles: [chimera]
     build:
       context: ../Chimera/apps/vuln-api
       dockerfile: Dockerfile

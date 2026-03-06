@@ -113,15 +113,18 @@ cd ~/Developer
 git clone https://github.com/NickCrew/apparatus.git
 git clone https://github.com/NickCrew/Chimera.git
 
-# Start complete testing environment
+# Start complete testing environment (Apparatus + Chimera)
 cd apparatus
-docker-compose up
+docker compose --profile chimera up
+
+# Or start Apparatus only
+docker compose up
 ```
 
 This starts:
 - **Apparatus**: http://localhost:8090/dashboard (testing platform)
-- **VulnWeb**: http://localhost:3000 (vulnerable web app)
-- **VulnAPI**: http://localhost:5000 (vulnerable API)
+- **VulnWeb**: http://localhost:3000 (vulnerable web app) — `chimera` profile only
+- **VulnAPI**: http://localhost:5000 (vulnerable API) — `chimera` profile only
 
 → See [Quick Reference Guide](docs/quick-reference.md) for usage examples
 
@@ -471,10 +474,10 @@ Apparatus is designed to work seamlessly with **Chimera**:
 - **[Chimera](../Chimera)** - Vulnerable web application and REST API with 450+ endpoints and 12 UIs
   - Provides realistic attack targets for security testing
   - Includes XSS, SQLi, CSRF, auth bypass, insecure deserialization vulnerabilities
-  - Runs alongside Apparatus via `docker-compose`
+  - Runs alongside Apparatus via `docker compose --profile chimera up`
   - Independent monorepo for separate development and deployment
 
-Use `docker-compose up` in Apparatus to run both platforms together for a complete security testing lab.
+Use `docker compose --profile chimera up` in Apparatus to run both platforms together. Without the profile, only Apparatus starts.
 
 ---
 
